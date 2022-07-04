@@ -95,7 +95,8 @@ static void bitbuffer_set_width(bitbuffer_t *bits, uint16_t width) {
         bits->free_row = bits->num_rows + extra_rows;
 }
 
-void bitbuffer_add_row(bitbuffer_t *bits) {
+// added gap parameter
+void bitbuffer_add_row(bitbuffer_t *bits, int gap) {
         if (bits->num_rows == 0)
                 bits->free_row = bits->num_rows = 1; // Add first row automatically
         if (bits->free_row == BITBUF_ROWS - 1) {
@@ -108,13 +109,15 @@ void bitbuffer_add_row(bitbuffer_t *bits) {
                 bits->bits_per_row[bits->num_rows - 1] = 0; // Clear last row to handle overflow somewhat gracefully
                 // fprintf(stderr, "ERROR: bitbuffer:: Could not add more rows\n");    // Some decoders may add many rows...
         }
+        bits->gaps_per_row[bits->num_rows - 1] = gap;
 }
 
-void bitbuffer_add_sync(bitbuffer_t *bits) {
+void bitbuffer_add_sync(bitbuffer_t *bits, int gap) {
         if (bits->num_rows == 0)
                 bits->free_row = bits->num_rows = 1; // Add first row automatically
         if (bits->bits_per_row[bits->num_rows - 1]) {
-                bitbuffer_add_row(bits);
+
+                bitbuffer_add_row(bits, gap);
         }
         bits->syncs_before_row[bits->num_rows - 1]++;
 }
@@ -346,11 +349,16 @@ static void print_bitbuffer(const bitbuffer_t *bits, int always_binary) {
         if (bits->num_rows >= BITBUF_ROWS) {
                 fprintf(stderr, "... Maximum number of rows reached. Message is likely truncated.\n");
         }
+//     for (int i = 0; i < bits->num_rows; i++ ){
+//         printf(" Gap:");
+//         printf("%d", bits->gaps_per_row[i]);
+//     }
 }
 
 void bitbuffer_print(const bitbuffer_t *bits) {
         print_bitbuffer(bits, 0);
 }
+
 
 void bitbuffer_debug(const bitbuffer_t *bits) {
         print_bitbuffer(bits, 1);
@@ -375,7 +383,7 @@ int bitrow_snprint(uint8_t const *bitrow, unsigned bit_len, char *str, unsigned 
         return len;
 }
 
-void bitbuffer_parse(bitbuffer_t *bits, const char *code) {
+void bitbuffer_parse(bitbuffer_t *bits, const char *code, int gap) {
         const char *c;
         int data = 0;
         int width = -1;
@@ -394,7 +402,7 @@ void bitbuffer_parse(bitbuffer_t *bits, const char *code) {
                                 bitbuffer_set_width(bits, width);
                         }
                         if (bits->num_rows > 0) {
-                                bitbuffer_add_row(bits);
+                                bitbuffer_add_row(bits, gap = 0);
                         }
 
                         char const *p = c;
@@ -413,7 +421,7 @@ void bitbuffer_parse(bitbuffer_t *bits, const char *code) {
                                 bitbuffer_set_width(bits, width);
                                 width = -1;
                         }
-                        bitbuffer_add_row(bits);
+                        bitbuffer_add_row(bits, gap);
                         continue;
                 } else if (*c >= '0' && *c <= '9') {
                         data = *c - '0';
@@ -511,7 +519,7 @@ int main(void)
     ASSERT(bits.num_rows == 1);
 
     fprintf(stderr, "TEST: bitbuffer:: Add 1 new row\n");
-    bitbuffer_add_row(&bits);
+    bitbuffer_add_row(&bits,0);
     bitbuffer_print(&bits);
     ASSERT(bits.num_rows == 2);
 
@@ -523,7 +531,7 @@ int main(void)
     ASSERT(bits.num_rows == 2);
 
     fprintf(stderr, "TEST: bitbuffer:: Add row and fill 1 column too many\n");
-    bitbuffer_add_row(&bits);
+    bitbuffer_add_row(&bits,0);
     for (int i = 0; i <= BITBUF_COLS * 8; ++i) {
         bitbuffer_add_bit(&bits, i % 2);
     }
@@ -551,7 +559,7 @@ int main(void)
 
     fprintf(stderr, "TEST: bitbuffer:: Add 1 row too many\n");
     for (int i = 0; i <= BITBUF_ROWS; ++i) {
-        bitbuffer_add_row(&bits);
+        bitbuffer_add_row(&bits,0);
     }
     bitbuffer_add_bit(&bits, 1);
     bitbuffer_print(&bits);

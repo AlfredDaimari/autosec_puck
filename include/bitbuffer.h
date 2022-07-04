@@ -35,6 +35,7 @@ typedef struct bitbuffer {
         uint16_t free_row;                      ///< Index of next free row
         uint16_t bits_per_row[BITBUF_ROWS];     ///< Number of active bits per row
         uint16_t syncs_before_row[BITBUF_ROWS]; ///< Number of sync pulses before row
+        uint16_t gaps_per_row[BITBUF_ROWS];     /// number of gaps per row
         bitarray_t bb;                          ///< The actual bits buffer
 } bitbuffer_t;
 
@@ -45,10 +46,10 @@ void bitbuffer_clear(bitbuffer_t *bits);
 void bitbuffer_add_bit(bitbuffer_t *bits, int bit);
 
 /// Add a new row to the bitbuffer.
-void bitbuffer_add_row(bitbuffer_t *bits);
+void bitbuffer_add_row(bitbuffer_t *bits, int gap);
 
 /// Increment sync counter, add new row if not empty.
-void bitbuffer_add_sync(bitbuffer_t *bits);
+void bitbuffer_add_sync(bitbuffer_t *bits, int gap);
 
 /// Extract (potentially unaligned) bytes from the bit buffer. Len is bits.
 void bitbuffer_extract_bytes(bitbuffer_t *bitbuffer, unsigned row,
@@ -95,7 +96,7 @@ int bitrow_snprint(uint8_t const *bitrow, unsigned bit_len, char *str, unsigned 
 /// The (optionally "0x" prefixed) hex code is processed into a bitbuffer_t.
 /// Each row is optionally prefixed with a length enclosed in braces "{}" or
 /// separated with a slash "/" character. Whitespace is ignored.
-void bitbuffer_parse(bitbuffer_t *bits, const char *code);
+void bitbuffer_parse(bitbuffer_t *bits, const char *code, int gap);
 
 /// Search the specified row of the bitbuffer, starting from bit 'start', for
 /// the pattern provided. Return the location of the first match, or the end

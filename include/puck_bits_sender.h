@@ -6,6 +6,7 @@
 #define RTL433_PUCK_BITS_SENDER_H
 
 #include <dbus/dbus.h>
+#include "bitbuffer.h"
 
 extern const char INTERFACE_NAME[];
 extern const char BUS_NAME[];
@@ -22,4 +23,9 @@ int send_bits_to_receiver(char *const msg);
 
 int init_dbus_connection(void);
 
+void send_puck_bits(const bitbuffer_t *bits);
+
 #endif // RTL433_PUCK_BITS_SENDER_H
+
+
+

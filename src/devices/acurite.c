@@ -1319,7 +1319,7 @@ static int acurite_00275rm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // Combine signal if exactly three repeats were found
     if (n_rows == 3) {
-        bitbuffer_add_row(bitbuffer);
+        bitbuffer_add_row(bitbuffer,0);
         uint8_t *b = bitbuffer->bb[bitbuffer->num_rows - 1];
         for (int i = 0; i < 11; ++i) {
             // The majority bit count wins

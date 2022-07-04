@@ -294,7 +294,7 @@ void am_analyze_classify(am_analyze_t *aa) {
                                         bitbuffer_add_bit(&bits, 1);
                                 } else if (signal_distance_data[i] > (a[1] + a[2]) / 2) {
                                         //                     fprintf(stderr, "0 [%d] %d > %d\n",i, signal_distance_data[i], (a[1]+a[2])/2);
-                                        bitbuffer_add_row(&bits);
+                                        bitbuffer_add_row(&bits, signal_distance_data[i]);
                                 }
 
                         }
@@ -314,7 +314,7 @@ void am_analyze_classify(am_analyze_t *aa) {
                                 }
                                 if ((signal_distance_data[i] >= (a[1] + a[2]) / 2)) {
                                         //                     fprintf(stderr, "\\n [%d] %d > %d\n",i, signal_distance_data[i], (a[1]+a[2])/2);
-                                        bitbuffer_add_row(&bits);
+                                        bitbuffer_add_row(&bits, signal_distance_data[i]);
                                 }
 
 
