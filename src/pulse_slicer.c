@@ -17,8 +17,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <string.h>
 #include <math.h>
 #include <limits.h>
+#include "puck_bits_sender.h"
 
 static int account_event(r_device *device, bitbuffer_t *bits, char const *demod_name) {
         // run decoder
@@ -46,15 +48,26 @@ static int account_event(r_device *device, bitbuffer_t *bits, char const *demod_
                 bitbuffer_print(bits);
         }
 
+        //////////////////////////////////////////////////////////////////////////////
+        char const *comp_str = "pulse_slicer_pcm";
+        if (strcmp(demod_name, comp_str) == 0) {
+                fprintf(stderr, "%s(): \n", demod_name);
+                send_puck_bits(bits);
+        }
         return ret;
 }
 
 int pulse_slicer_pcm(const pulse_data_t *pulses, r_device *device) {
+        // // printf("\n##############################################\nPulse Slicer PCM\n#########################################3\n");
         float samples_per_us = pulses->sample_rate / 1.0e6;
         int s_short = device->short_width * samples_per_us;
         int s_long = device->long_width * samples_per_us;
         int s_reset = device->reset_limit * samples_per_us;
         int s_gap = device->gap_limit * samples_per_us;
+        // printf("\n s_reset %d \n", s_reset);
+
+        // printf("\n s_gap %d \n", s_reset);
+
         int s_sync = device->sync_width * samples_per_us;
         int s_tolerance = device->tolerance * samples_per_us;
 
@@ -167,6 +180,8 @@ int pulse_slicer_pcm(const pulse_data_t *pulses, r_device *device) {
         int nrz_width = 0;
         int nrz_count = 0;
         for (unsigned n = 0; preamble_len == 0 && s_short == s_long && n < pulses->num_pulses; ++n) {
+                // printf("\n");
+                // printf("%d", pulses->gap[n]);
                 if (pulses->pulse[n] >= s_short - s_tolerance
                     && pulses->pulse[n] <= s_short + s_tolerance) {
                         nrz_width += pulses->pulse[n];
@@ -204,15 +219,19 @@ int pulse_slicer_pcm(const pulse_data_t *pulses, r_device *device) {
                 // Determine number of low bit periods in current gap length (rounded)
                 // for RZ subtract the nominal bit-gap
                 int lows = (pulses->gap[n] + s_short - s_long) * f_long + 0.5;
+                // int gap3 = pulses->gap[n];
+                // printf("\n gap %d \n", gap3);
 
                 // Add run of ones (1 for RZ, many for NRZ)
                 for (int i = 0; i < highs; ++i) {
                         bitbuffer_add_bit(&bits, 1);
+                        // printf("1");
                 }
                 // Add run of zeros, handle possibly negative "lows" gracefully
                 lows = MIN(lows, max_zeros); // Don't overflow at end of message
                 for (int i = 0; i < lows; ++i) {
                         bitbuffer_add_bit(&bits, 0);
+                        // printf("0");
                 }
 
                 // Validate data
@@ -230,7 +249,12 @@ int pulse_slicer_pcm(const pulse_data_t *pulses, r_device *device) {
 
                         // Check for new packet in multipacket
                 else if (pulses->gap[n] > gap_limit && pulses->gap[n] <= s_reset) {
-                        bitbuffer_add_row(&bits);
+                        // printf("\n\n gap %d \n\n", pulses->gap[n]);
+                        // int gap4 = pulses->gap[n];
+                        // int samp = pulses->sample_rate;
+                        // float tim = pulses->gap[n]/pulses->sample_rate;
+
+                        bitbuffer_add_row(&bits, pulses->gap[n]);
                 }
                 // End of Message?
                 if (((n == pulses->num_pulses - 1)                            // No more pulses? (FSK)
@@ -245,6 +269,8 @@ int pulse_slicer_pcm(const pulse_data_t *pulses, r_device *device) {
 }
 
 int pulse_slicer_ppm(const pulse_data_t *pulses, r_device *device) {
+        // // printf("\n##############################################\nPulse Slicer PPM\n#########################################3\n");
+
         float samples_per_us = pulses->sample_rate / 1.0e6;
 
         int s_short = device->short_width * samples_per_us;
@@ -253,6 +279,7 @@ int pulse_slicer_ppm(const pulse_data_t *pulses, r_device *device) {
         int s_gap = device->gap_limit * samples_per_us;
         int s_sync = device->sync_width * samples_per_us;
         int s_tolerance = device->tolerance * samples_per_us;
+// printf("\n s_gap %d \n", s_gap);
 
         // check for rounding to zero
         if ((device->short_width > 0 && s_short <= 0)
@@ -295,17 +322,22 @@ int pulse_slicer_ppm(const pulse_data_t *pulses, r_device *device) {
                 if (pulses->gap[n] > zero_l && pulses->gap[n] < zero_u) {
                         // Short gap
                         bitbuffer_add_bit(&bits, 0);
+                        // printf("0");
                 } else if (pulses->gap[n] > one_l && pulses->gap[n] < one_u) {
                         // Long gap
                         bitbuffer_add_bit(&bits, 1);
+                        // printf("1");
                 } else if (pulses->gap[n] > sync_l && pulses->gap[n] < sync_u) {
                         // Sync gap
-                        bitbuffer_add_sync(&bits);
+                        bitbuffer_add_sync(&bits, pulses->gap[n]);
                 }
 
                         // Check for new packet in multipacket
                 else if (pulses->gap[n] < s_reset) {
-                        bitbuffer_add_row(&bits);
+                        // int gap3 = pulses->gap[n];
+                        // printf("\n\n gap %d \n\n", gap3);
+
+                        bitbuffer_add_row(&bits, pulses->gap[n]);
                 }
                 // End of Message?
                 if (((n == pulses->num_pulses - 1)                            // No more pulses? (FSK)
@@ -315,11 +347,14 @@ int pulse_slicer_ppm(const pulse_data_t *pulses, r_device *device) {
                         events += account_event(device, &bits, __func__);
                         bitbuffer_clear(&bits);
                 }
+
         } // for pulses
         return events;
 }
 
 int pulse_slicer_pwm(const pulse_data_t *pulses, r_device *device) {
+        // // printf("\n##############################################\nPulse Slicer PWM\n#########################################3\n");
+
         float samples_per_us = pulses->sample_rate / 1.0e6;
 
         int s_short = device->short_width * samples_per_us;
@@ -328,6 +363,8 @@ int pulse_slicer_pwm(const pulse_data_t *pulses, r_device *device) {
         int s_gap = device->gap_limit * samples_per_us;
         int s_sync = device->sync_width * samples_per_us;
         int s_tolerance = device->tolerance * samples_per_us;
+
+// printf("\n s_gap %d \n", s_gap);
 
         // check for rounding to zero
         if ((device->short_width > 0 && s_short <= 0)
@@ -394,17 +431,21 @@ int pulse_slicer_pwm(const pulse_data_t *pulses, r_device *device) {
                 if (pulses->pulse[n] > one_l && pulses->pulse[n] < one_u) {
                         // 'Short' 1 pulse
                         bitbuffer_add_bit(&bits, 1);
+                        // printf("1");
                 } else if (pulses->pulse[n] > zero_l && pulses->pulse[n] < zero_u) {
                         // 'Long' 0 pulse
                         bitbuffer_add_bit(&bits, 0);
+                        // printf("0");
                 } else if (pulses->pulse[n] > sync_l && pulses->pulse[n] < sync_u) {
                         // Sync pulse
-                        bitbuffer_add_sync(&bits);
+                        bitbuffer_add_sync(&bits, pulses->gap[n]);
                 } else if (pulses->pulse[n] <= one_l) {
                         // Ignore spurious short pulses
                 } else {
                         // Pulse outside specified timing
-                        bitbuffer_add_row(&bits);
+                        bitbuffer_add_row(&bits, pulses->gap[n]);
+                        // printf("\n\n gap %d \n\n", pulses->gap[n]);
+
                 }
 
                 // End of Message?
@@ -416,13 +457,17 @@ int pulse_slicer_pwm(const pulse_data_t *pulses, r_device *device) {
                 } else if (s_gap > 0 && pulses->gap[n] > s_gap
                            && bits.num_rows > 0 && bits.bits_per_row[bits.num_rows - 1] > 0) {
                         // New packet in multipacket
-                        bitbuffer_add_row(&bits);
+                        bitbuffer_add_row(&bits, pulses->gap[n]);
+                        // printf("\n\n gap %d \n\n", pulses->gap[n]);
+
                 }
         }
         return events;
 }
 
 int pulse_slicer_manchester_zerobit(const pulse_data_t *pulses, r_device *device) {
+        // // printf("\n##############################################\nPulse Slicer Manchester Zero\n#########################################3\n");
+
         float samples_per_us = pulses->sample_rate / 1.0e6;
 
         int s_short = device->short_width * samples_per_us;
@@ -431,6 +476,7 @@ int pulse_slicer_manchester_zerobit(const pulse_data_t *pulses, r_device *device
         int s_gap = device->gap_limit * samples_per_us;
         int s_sync = device->sync_width * samples_per_us;
         int s_tolerance = device->tolerance * samples_per_us;
+// printf("\n s_gap %d \n", s_gap);
 
         // check for rounding to zero
         if ((device->short_width > 0 && s_short <= 0)
@@ -449,6 +495,7 @@ int pulse_slicer_manchester_zerobit(const pulse_data_t *pulses, r_device *device
 
         // First rising edge is always counted as a zero (Seems to be hardcoded policy for the Oregon Scientific sensors...)
         bitbuffer_add_bit(&bits, 0);
+        // printf("0");
 
         for (unsigned n = 0; n < pulses->num_pulses; ++n) {
                 // The pulse or gap is too long or too short, thus invalid
@@ -461,9 +508,13 @@ int pulse_slicer_manchester_zerobit(const pulse_data_t *pulses, r_device *device
                             && pulses->pulse[n] <= s_short * 2 + s_tolerance) {
                                 // Long last pulse means with the gap this is a [1]10 transition, add a one
                                 bitbuffer_add_bit(&bits, 1);
+                                // printf("1");
                         }
-                        bitbuffer_add_row(&bits);
+                        bitbuffer_add_row(&bits, pulses->gap[n]);
+                        // printf("\n\n gap %d \n\n", pulses->gap[n]);
+
                         bitbuffer_add_bit(&bits, 0); // Prepare for new message with hardcoded 0
+                        // printf("0");
                         time_since_last = 0;
                 }
                         // Falling edge is on end of pulse
@@ -471,6 +522,7 @@ int pulse_slicer_manchester_zerobit(const pulse_data_t *pulses, r_device *device
                         // Last bit was recorded more than short_width*1.5 samples ago
                         // so this pulse start must be a data edge (falling data edge means bit = 1)
                         bitbuffer_add_bit(&bits, 1);
+                        // printf("1");
                         time_since_last = 0;
                 } else {
                         time_since_last += pulses->pulse[n];
@@ -483,6 +535,7 @@ int pulse_slicer_manchester_zerobit(const pulse_data_t *pulses, r_device *device
                         events += account_event(device, &bits, __func__);
                         bitbuffer_clear(&bits);
                         bitbuffer_add_bit(&bits, 0); // Prepare for new message with hardcoded 0
+                        // printf("0");
                         time_since_last = 0;
                 }
                         // Rising edge is on end of gap
@@ -490,6 +543,7 @@ int pulse_slicer_manchester_zerobit(const pulse_data_t *pulses, r_device *device
                         // Last bit was recorded more than short_width*1.5 samples ago
                         // so this pulse end is a data edge (rising data edge means bit = 0)
                         bitbuffer_add_bit(&bits, 0);
+                        // printf("0");
                         time_since_last = 0;
                 } else {
                         time_since_last += pulses->gap[n];
@@ -506,6 +560,8 @@ static inline int pulse_slicer_get_symbol(const pulse_data_t *pulses, unsigned i
 }
 
 int pulse_slicer_dmc(const pulse_data_t *pulses, r_device *device) {
+        // // printf("\n##############################################\nPulse Slicer DMC\n#########################################\n");
+
         float samples_per_us = pulses->sample_rate / 1.0e6;
 
         int s_short = device->short_width * samples_per_us;
@@ -514,6 +570,7 @@ int pulse_slicer_dmc(const pulse_data_t *pulses, r_device *device) {
         int s_gap = device->gap_limit * samples_per_us;
         int s_sync = device->sync_width * samples_per_us;
         int s_tolerance = device->tolerance * samples_per_us;
+// printf("\n s_gap %d \n", s_gap);
 
         // check for rounding to zero
         if ((device->short_width > 0 && s_short <= 0)
@@ -535,13 +592,16 @@ int pulse_slicer_dmc(const pulse_data_t *pulses, r_device *device) {
                 if (abs(symbol - s_short) < s_tolerance) {
                         // Short - 1
                         bitbuffer_add_bit(&bits, 1);
+                        // printf("1");
                         symbol = pulse_slicer_get_symbol(pulses, ++n);
                         if (abs(symbol - s_short) > s_tolerance) {
                                 if (symbol >= s_reset - s_tolerance) {
                                         // Don't expect another short gap at end of message
                                         n--;
                                 } else if (bits.num_rows > 0 && bits.bits_per_row[bits.num_rows - 1] > 0) {
-                                        bitbuffer_add_row(&bits);
+                                        bitbuffer_add_row(&bits, pulses->gap[n]);
+                                        // printf("\n\n gap %d \n\n", pulses->gap[n]);
+
 /*
                     fprintf(stderr, "Detected error during pulse_slicer_dmc(): %s\n",
                             device->name);
@@ -551,6 +611,7 @@ int pulse_slicer_dmc(const pulse_data_t *pulses, r_device *device) {
                 } else if (abs(symbol - s_long) < s_tolerance) {
                         // Long - 0
                         bitbuffer_add_bit(&bits, 0);
+                        // printf("0");
                 } else if (symbol >= s_reset - s_tolerance
                            && bits.num_rows > 0) { // Only if data has been accumulated
                         //END message ?
@@ -562,6 +623,8 @@ int pulse_slicer_dmc(const pulse_data_t *pulses, r_device *device) {
 }
 
 int pulse_slicer_piwm_raw(const pulse_data_t *pulses, r_device *device) {
+        // // printf("\n##############################################\nPulse Slicer PIWM Raw\n#########################################\n");
+
         float samples_per_us = pulses->sample_rate / 1.0e6;
 
         int s_short = device->short_width * samples_per_us;
@@ -570,6 +633,7 @@ int pulse_slicer_piwm_raw(const pulse_data_t *pulses, r_device *device) {
         int s_gap = device->gap_limit * samples_per_us;
         int s_sync = device->sync_width * samples_per_us;
         int s_tolerance = device->tolerance * samples_per_us;
+// printf("\n s_gap %d \n", s_gap);
 
         // check for rounding to zero
         if ((device->short_width > 0 && s_short <= 0)
@@ -594,15 +658,21 @@ int pulse_slicer_piwm_raw(const pulse_data_t *pulses, r_device *device) {
                 int symbol = pulse_slicer_get_symbol(pulses, n);
                 w = symbol * f_short + 0.5;
                 if (symbol > s_long) {
-                        bitbuffer_add_row(&bits);
+                        bitbuffer_add_row(&bits, pulses->gap[n]);
+                        // printf("\n\n gap %d \n\n", pulses->gap[n]);
+
                 } else if (abs(symbol - w * s_short) < s_tolerance) {
                         // Add w symbols
-                        for (; w > 0; --w)
+                        for (; w > 0; --w) {
                                 bitbuffer_add_bit(&bits, 1 - n % 2);
+                                // printf("0");
+                        }
                 } else if (symbol < s_reset
                            && bits.num_rows > 0
                            && bits.bits_per_row[bits.num_rows - 1] > 0) {
-                        bitbuffer_add_row(&bits);
+                        bitbuffer_add_row(&bits, pulses->gap[n]);
+                        // printf("\n\n gap %d \n\n", pulses->gap[n]);
+
 /*
             fprintf(stderr, "Detected error during pulse_slicer_piwm_raw(): %s\n",
                     device->name);
@@ -621,6 +691,8 @@ int pulse_slicer_piwm_raw(const pulse_data_t *pulses, r_device *device) {
 }
 
 int pulse_slicer_piwm_dc(const pulse_data_t *pulses, r_device *device) {
+        // // printf("\n##############################################\nPulse Slicer PIWM DC\n#########################################\n");
+
         float samples_per_us = pulses->sample_rate / 1.0e6;
 
         int s_short = device->short_width * samples_per_us;
@@ -629,6 +701,7 @@ int pulse_slicer_piwm_dc(const pulse_data_t *pulses, r_device *device) {
         int s_gap = device->gap_limit * samples_per_us;
         int s_sync = device->sync_width * samples_per_us;
         int s_tolerance = device->tolerance * samples_per_us;
+// printf("\n s_gap %d \n", s_gap);
 
         // check for rounding to zero
         if ((device->short_width > 0 && s_short <= 0)
@@ -649,13 +722,17 @@ int pulse_slicer_piwm_dc(const pulse_data_t *pulses, r_device *device) {
                 if (abs(symbol - s_short) < s_tolerance) {
                         // Short - 1
                         bitbuffer_add_bit(&bits, 1);
+                        // printf("1");
                 } else if (abs(symbol - s_long) < s_tolerance) {
                         // Long - 0
                         bitbuffer_add_bit(&bits, 0);
+                        // printf("0");
                 } else if (symbol < s_reset
                            && bits.num_rows > 0
                            && bits.bits_per_row[bits.num_rows - 1] > 0) {
-                        bitbuffer_add_row(&bits);
+                        bitbuffer_add_row(&bits, pulses->gap[n]);
+                        // printf("\n\n gap %d \n\n", pulses->gap[n]);
+
 /*
             fprintf(stderr, "Detected error during pulse_slicer_piwm_dc(): %s\n",
                     device->name);
@@ -674,6 +751,8 @@ int pulse_slicer_piwm_dc(const pulse_data_t *pulses, r_device *device) {
 }
 
 int pulse_slicer_nrzs(const pulse_data_t *pulses, r_device *device) {
+        // // printf("\n##############################################\nPulse Slicer NRZS\n#########################################\n");
+
         float samples_per_us = pulses->sample_rate / 1.0e6;
 
         int s_short = device->short_width * samples_per_us;
@@ -682,6 +761,7 @@ int pulse_slicer_nrzs(const pulse_data_t *pulses, r_device *device) {
         int s_gap = device->gap_limit * samples_per_us;
         int s_sync = device->sync_width * samples_per_us;
         int s_tolerance = device->tolerance * samples_per_us;
+// printf("\n s_gap %d \n", s_gap);
 
         // check for rounding to zero
         if ((device->short_width > 0 && s_short <= 0)
@@ -702,10 +782,13 @@ int pulse_slicer_nrzs(const pulse_data_t *pulses, r_device *device) {
                 if (pulses->pulse[n] > limit) {
                         for (int i = 0; i < (pulses->pulse[n] / limit); i++) {
                                 bitbuffer_add_bit(&bits, 1);
+                                // printf("1");
                         }
                         bitbuffer_add_bit(&bits, 0);
+                        // printf("0");
                 } else if (pulses->pulse[n] < limit) {
                         bitbuffer_add_bit(&bits, 0);
+                        // printf("0");
                 }
 
                 if (n == pulses->num_pulses - 1
@@ -733,6 +816,8 @@ int pulse_slicer_nrzs(const pulse_data_t *pulses, r_device *device) {
  */
 
 int pulse_slicer_osv1(const pulse_data_t *pulses, r_device *device) {
+        // // printf("\n##############################################\nPulse Slicer OSVL\n#########################################\n");
+
         float samples_per_us = pulses->sample_rate / 1.0e6;
 
         int s_short = device->short_width * samples_per_us;
@@ -741,6 +826,7 @@ int pulse_slicer_osv1(const pulse_data_t *pulses, r_device *device) {
         int s_gap = device->gap_limit * samples_per_us;
         int s_sync = device->sync_width * samples_per_us;
         int s_tolerance = device->tolerance * samples_per_us;
+// printf("\n s_gap %d \n", s_gap);
 
         // check for rounding to zero
         if ((device->short_width > 0 && s_short <= 0)
@@ -825,7 +911,7 @@ int pulse_slicer_string(const char *code, r_device *device) {
         int events = 0;
         bitbuffer_t bits = {0};
 
-        bitbuffer_parse(&bits, code);
+        bitbuffer_parse(&bits, code, 0);
 
         events += account_event(device, &bits, __func__);
 

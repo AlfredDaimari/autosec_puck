@@ -419,7 +419,7 @@ static unsigned parse_modulation(char const *str)
 static unsigned parse_bits(const char *code, uint8_t *bitrow)
 {
     bitbuffer_t bits = {0};
-    bitbuffer_parse(&bits, code);
+    bitbuffer_parse(&bits, code, 0);
     if (bits.num_rows != 1) {
         fprintf(stderr, "Bad flex spec, \"match\", \"preamble\", and getter mask need exactly one bit row (%d found)!\n", bits.num_rows);
         usage();
