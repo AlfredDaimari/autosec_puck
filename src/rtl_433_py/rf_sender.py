@@ -1,6 +1,7 @@
-import time, sys, rflib, struct
-from rflib import *
 from struct import *
+from rflib import *
+from keyfob import KeyFobPacket
+from time import sleep
 
 
 class RfSender:
@@ -11,40 +12,39 @@ class RfSender:
     def __init__(self) -> None:
         self.device = RfCat()
 
-    def send_message(self, msg: object) -> None:
+    def send_message(self, rfmsg: object, mod_msg: list) -> None:
         """
-        Sends a message using the rf device \n
-        :param msg: an object of RfMessage
+        Send a message using the rf device \n
+        :param rfmsg: instance of class RfMessage
+        :param mod_msg: [[packets to send][amount of time to wait before sending message]]
         """
-        if not isinstance(msg, RfMessage):
-            raise TypeError("msg is not instance of RfMessage")
+        self.device.setModeIDLE()
 
-        self.device.setMdmModulation(msg.modulation)
-        self.device.setFreq(self.frequency)
-        self.device.makePktFLEN(self.packet_length)
-        self.device.setMdmSyncMode(0)  # Disable syncword and preamble as this is not used by remote
-        self.device.setMdmDRate(self.baud_rate)  # This sets the modulation
-        # d.setMaxPower
+        self.device.setMdmModulation(rfmsg.modulation)
+        self.device.setFreq(rfmsg.frequency)
+        self.device.makePktFLEN(rfmsg.packet_length)
+        self.device.setMdmSyncMode(0)  # Disable sync word and preamble as this is not used by remote
+        self.device.setMdmDRate(rfmsg.baud_rate)  # This sets the modulation
         self.device.setModeTX()  # This is the transmitter mode
 
-        mod_msg = int(self.message, 2)
-        packed_msg = pack(">Q", mod_msg)
-        packed_msg_len = len(packed_msg)    # ? why is this needed
+        for i in range(len(mod_msg[0])):
+            try:
+                sleep(mod_msg[1][i])
+                self.device.RFxmit(mod_msg[0][i])
+            except:
+                print("Error in sending message!")
+                return
 
-        try:
-            self.device.RFxmit(packed_msg)
-            print("Message sent!")
-        except:
-            print("Error in sending message!")
         self.device.setModeIDLE()
+        print("Message sent!")
 
 
 class RfMessage:
     """
-    This class is for creating a rf message to be sent using RfSender \n
+    Create an rf message to be sent using RfSender \n
     """
 
-    def __init__(self, msg: str, mod_type: str, baud_rate: int, pk_len: int, dev:object, freq=433920000) -> None:
+    def __init__(self, msg: object, mod_type: str, baud_rate: int, pk_len: int, dev: object, freq=433920000) -> None:
         """
         Create RfMessage \n
         :param msg: the message to send
@@ -54,6 +54,9 @@ class RfMessage:
         :param dev: the rf device (yardstick) (should be an instance of class RfSender)
         :param freq:  the frequency in which to send the packet in
         """
+        if not isinstance(msg, KeyFobPacket):
+            raise TypeError("msg is not an instance of KeyFobPacket")
+
         self.message = msg
         self.frequency = freq
         self.modulation_type = mod_type
@@ -61,19 +64,24 @@ class RfMessage:
         self.packet_length = pk_len
         self.dev = dev
 
-        self.__convert_msg_to_hex()
+    def __create_dispatchable_message(self) -> list:
+        """
+        Will create a dispatchable message, along with wait times
+        :return: returns [[array of  packets to send][amount of time to wait send the next message]]
+        """
+        self.message.convert_to_decimal()
+        pkt_arr = []
+        time_arr = []
+        for i in range(len(self.message)):
+            packed_msg = pack(">Q", self.message.packets[i])
+            pkt_arr.append(packed_msg)
+            time_arr.append(self.message.time_to_prev_pk(i))
 
-    def __convert_msg_to_hex(self) -> None:
-        """
-        converts the message to hex
-        - Karan Handa
-        """
-        pass
+        return [pkt_arr, time_arr]
 
     def send(self) -> None:
         """
         sends message using the yardstick
         """
-        self.dev.send_message(self)
-
-
+        dsp_msg = self.__create_dispatchable_message()
+        self.dev.send_message(self, dsp_msg)
