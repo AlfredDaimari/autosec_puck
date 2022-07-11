@@ -1,7 +1,7 @@
 from struct import *
 from rflib import *
-from keyfob import KeyFobPacket
 from time import sleep
+from keyfob import KeyFobPacket
 
 
 class RfSender:

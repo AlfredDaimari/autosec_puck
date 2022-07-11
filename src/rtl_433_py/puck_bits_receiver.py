@@ -16,8 +16,8 @@ import dbus
 import dbus.service
 from dbus.mainloop.glib import DBusGMainLoop
 from datetime import datetime
-from keyfob import RollingKeyFobs
-from rf_sender import RfSender
+from rolling_keyfob import RollingKeyFobs
+from rf import RfSender
 
 DBusGMainLoop(set_as_default=True)
 OPATH = "/org/autosec/PuckBitsReceiver"
