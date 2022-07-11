@@ -16,7 +16,7 @@ import dbus
 import dbus.service
 from dbus.mainloop.glib import DBusGMainLoop
 from datetime import datetime
-from rolling_keyfob import RollingKeyFobs
+from rolling_keyfobs import RollingKeyFobs
 from rf import RfSender
 
 DBusGMainLoop(set_as_default=True)
