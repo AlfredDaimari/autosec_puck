@@ -18,6 +18,7 @@ from dbus.mainloop.glib import DBusGMainLoop
 from datetime import datetime
 from rolling_keyfobs import RollingKeyFobs
 from rf import RfSender
+from jammer import *
 
 DBusGMainLoop(set_as_default=True)
 OPATH = "/org/autosec/PuckBitsReceiver"
@@ -36,7 +37,10 @@ class PuckBitsReceiver(dbus.service.Object):
         print("dbus has been initialized")
         self.rf_device = RfSender()
         print("yardstick has been initialized")
-        self.rolling_key_fobs = RollingKeyFobs(self.rf_device)
+        # TODO: configure for raspberry bi
+        self.jammer = Jammer("input_file", "mode", "freq", "sample")
+        print("Jammer has been initialized")
+        self.rolling_key_fobs = RollingKeyFobs(self.rf_device, self.jammer)
         print("rolling key fobs dts has been created")
 
     @dbus.service.method(dbus_interface=IFACE, in_signature="s", out_signature="s", sender_keyword="sender",

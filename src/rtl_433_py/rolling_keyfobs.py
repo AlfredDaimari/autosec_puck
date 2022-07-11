@@ -1,5 +1,6 @@
 from rf import *
 from keyfob import *
+from jammer import *
 
 
 class RollingKeyFobs:
@@ -8,14 +9,19 @@ class RollingKeyFobs:
     sends out one key fob when 2 valid key fobs are stored
     """
 
-    def __init__(self, dev: object) -> None:
+    def __init__(self, dev: object, jam: object) -> None:
         """
         :param dev: rf device (instance of RfSender)
+        :param jam: jammer device (instance of Jammer)
         """
         self.key_fobs_list = []
         if not isinstance(dev, RfSender):
             raise TypeError("dev is not an instance of RfSender")
         self.dev = dev
+
+        if not isinstance(jam, Jammer):
+            raise TypeError("jam is not an instance of Jammer")
+        self.jam = jam
 
     def __len__(self):
         return len(self.key_fobs_list)
@@ -47,7 +53,10 @@ class RollingKeyFobs:
         :param msg: instance of key fob packet
         """
         rf_message = RfMessage(msg, MOD_2FSK | MANCHESTER, 4000, 230, self.dev)
+
+        self.jam.stop()
         rf_message.send()
+        self.jam.start()
 
     def push(self, bit_string: str, gap_to_prev_bitpk: int) -> None:
         """
