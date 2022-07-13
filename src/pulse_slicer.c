@@ -22,7 +22,8 @@
 #include <limits.h>
 #include "puck_bits_sender.h"
 
-static int account_event(r_device *device, bitbuffer_t *bits, char const *demod_name) {
+static int account_event(r_device *device, bitbuffer_t *bits, char const *demod_name)
+{
         // run decoder
         int ret = 0;
         if (device->decode_fn) {
@@ -57,7 +58,8 @@ static int account_event(r_device *device, bitbuffer_t *bits, char const *demod_
         return ret;
 }
 
-int pulse_slicer_pcm(const pulse_data_t *pulses, r_device *device) {
+int pulse_slicer_pcm(const pulse_data_t *pulses, r_device *device)
+{
         // // printf("\n##############################################\nPulse Slicer PCM\n#########################################3\n");
         float samples_per_us = pulses->sample_rate / 1.0e6;
         int s_short = device->short_width * samples_per_us;
@@ -268,7 +270,8 @@ int pulse_slicer_pcm(const pulse_data_t *pulses, r_device *device) {
         return events;
 }
 
-int pulse_slicer_ppm(const pulse_data_t *pulses, r_device *device) {
+int pulse_slicer_ppm(const pulse_data_t *pulses, r_device *device)
+{
         // // printf("\n##############################################\nPulse Slicer PPM\n#########################################3\n");
 
         float samples_per_us = pulses->sample_rate / 1.0e6;
@@ -352,7 +355,8 @@ int pulse_slicer_ppm(const pulse_data_t *pulses, r_device *device) {
         return events;
 }
 
-int pulse_slicer_pwm(const pulse_data_t *pulses, r_device *device) {
+int pulse_slicer_pwm(const pulse_data_t *pulses, r_device *device)
+{
         // // printf("\n##############################################\nPulse Slicer PWM\n#########################################3\n");
 
         float samples_per_us = pulses->sample_rate / 1.0e6;
@@ -465,7 +469,8 @@ int pulse_slicer_pwm(const pulse_data_t *pulses, r_device *device) {
         return events;
 }
 
-int pulse_slicer_manchester_zerobit(const pulse_data_t *pulses, r_device *device) {
+int pulse_slicer_manchester_zerobit(const pulse_data_t *pulses, r_device *device)
+{
         // // printf("\n##############################################\nPulse Slicer Manchester Zero\n#########################################3\n");
 
         float samples_per_us = pulses->sample_rate / 1.0e6;
@@ -552,14 +557,16 @@ int pulse_slicer_manchester_zerobit(const pulse_data_t *pulses, r_device *device
         return events;
 }
 
-static inline int pulse_slicer_get_symbol(const pulse_data_t *pulses, unsigned int n) {
+static inline int pulse_slicer_get_symbol(const pulse_data_t *pulses, unsigned int n)
+{
         if (n % 2 == 0)
                 return pulses->pulse[n / 2];
         else
                 return pulses->gap[n / 2];
 }
 
-int pulse_slicer_dmc(const pulse_data_t *pulses, r_device *device) {
+int pulse_slicer_dmc(const pulse_data_t *pulses, r_device *device)
+{
         // // printf("\n##############################################\nPulse Slicer DMC\n#########################################\n");
 
         float samples_per_us = pulses->sample_rate / 1.0e6;
@@ -622,7 +629,8 @@ int pulse_slicer_dmc(const pulse_data_t *pulses, r_device *device) {
         return events;
 }
 
-int pulse_slicer_piwm_raw(const pulse_data_t *pulses, r_device *device) {
+int pulse_slicer_piwm_raw(const pulse_data_t *pulses, r_device *device)
+{
         // // printf("\n##############################################\nPulse Slicer PIWM Raw\n#########################################\n");
 
         float samples_per_us = pulses->sample_rate / 1.0e6;
@@ -690,7 +698,8 @@ int pulse_slicer_piwm_raw(const pulse_data_t *pulses, r_device *device) {
         return events;
 }
 
-int pulse_slicer_piwm_dc(const pulse_data_t *pulses, r_device *device) {
+int pulse_slicer_piwm_dc(const pulse_data_t *pulses, r_device *device)
+{
         // // printf("\n##############################################\nPulse Slicer PIWM DC\n#########################################\n");
 
         float samples_per_us = pulses->sample_rate / 1.0e6;
@@ -750,7 +759,8 @@ int pulse_slicer_piwm_dc(const pulse_data_t *pulses, r_device *device) {
         return events;
 }
 
-int pulse_slicer_nrzs(const pulse_data_t *pulses, r_device *device) {
+int pulse_slicer_nrzs(const pulse_data_t *pulses, r_device *device)
+{
         // // printf("\n##############################################\nPulse Slicer NRZS\n#########################################\n");
 
         float samples_per_us = pulses->sample_rate / 1.0e6;
@@ -815,7 +825,8 @@ int pulse_slicer_nrzs(const pulse_data_t *pulses, r_device *device) {
  * bit is discarded.
  */
 
-int pulse_slicer_osv1(const pulse_data_t *pulses, r_device *device) {
+int pulse_slicer_osv1(const pulse_data_t *pulses, r_device *device)
+{
         // // printf("\n##############################################\nPulse Slicer OSVL\n#########################################\n");
 
         float samples_per_us = pulses->sample_rate / 1.0e6;
@@ -907,7 +918,8 @@ int pulse_slicer_osv1(const pulse_data_t *pulses, r_device *device) {
         return events;
 }
 
-int pulse_slicer_string(const char *code, r_device *device) {
+int pulse_slicer_string(const char *code, r_device *device)
+{
         int events = 0;
         bitbuffer_t bits = {0};
 

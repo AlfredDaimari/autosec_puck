@@ -14,11 +14,13 @@
 #include <stdlib.h>
 #include <string.h>
 
-void bitbuffer_clear(bitbuffer_t *bits) {
+void bitbuffer_clear(bitbuffer_t *bits)
+{
         memset(bits, 0, sizeof(*bits));
 }
 
-void bitbuffer_add_bit(bitbuffer_t *bits, int bit) {
+void bitbuffer_add_bit(bitbuffer_t *bits, int bit)
+{
         if (bits->num_rows == 0)
                 bits->free_row = bits->num_rows = 1; // Add first row automatically
 
@@ -67,7 +69,8 @@ void bitbuffer_add_bit(bitbuffer_t *bits, int bit) {
 }
 
 /// Set the width of the current (last) row by expanding or truncating as needed.
-static void bitbuffer_set_width(bitbuffer_t *bits, uint16_t width) {
+static void bitbuffer_set_width(bitbuffer_t *bits, uint16_t width)
+{
         if (bits->num_rows == 0)
                 bits->free_row = bits->num_rows = 1; // Add first row automatically
 
@@ -96,7 +99,8 @@ static void bitbuffer_set_width(bitbuffer_t *bits, uint16_t width) {
 }
 
 // added gap parameter
-void bitbuffer_add_row(bitbuffer_t *bits, int gap) {
+void bitbuffer_add_row(bitbuffer_t *bits, int gap)
+{
         if (bits->num_rows == 0)
                 bits->free_row = bits->num_rows = 1; // Add first row automatically
         if (bits->free_row == BITBUF_ROWS - 1) {
@@ -112,7 +116,8 @@ void bitbuffer_add_row(bitbuffer_t *bits, int gap) {
         bits->gaps_per_row[bits->num_rows - 1] = gap;
 }
 
-void bitbuffer_add_sync(bitbuffer_t *bits, int gap) {
+void bitbuffer_add_sync(bitbuffer_t *bits, int gap)
+{
         if (bits->num_rows == 0)
                 bits->free_row = bits->num_rows = 1; // Add first row automatically
         if (bits->bits_per_row[bits->num_rows - 1]) {
@@ -122,7 +127,8 @@ void bitbuffer_add_sync(bitbuffer_t *bits, int gap) {
         bits->syncs_before_row[bits->num_rows - 1]++;
 }
 
-void bitbuffer_invert(bitbuffer_t *bits) {
+void bitbuffer_invert(bitbuffer_t *bits)
+{
         for (unsigned row = 0; row < bits->num_rows; ++row) {
                 if (bits->bits_per_row[row] > 0) {
                         uint8_t *b = bits->bb[row];
@@ -137,7 +143,8 @@ void bitbuffer_invert(bitbuffer_t *bits) {
         }
 }
 
-void bitbuffer_nrzs_decode(bitbuffer_t *bits) {
+void bitbuffer_nrzs_decode(bitbuffer_t *bits)
+{
         for (unsigned row = 0; row < bits->num_rows; ++row) {
                 if (bits->bits_per_row[row] > 0) {
                         uint8_t *b = bits->bb[row];
@@ -156,7 +163,8 @@ void bitbuffer_nrzs_decode(bitbuffer_t *bits) {
         }
 }
 
-void bitbuffer_nrzm_decode(bitbuffer_t *bits) {
+void bitbuffer_nrzm_decode(bitbuffer_t *bits)
+{
         for (unsigned row = 0; row < bits->num_rows; ++row) {
                 if (bits->bits_per_row[row] > 0) {
                         uint8_t *b = bits->bb[row];
@@ -176,7 +184,8 @@ void bitbuffer_nrzm_decode(bitbuffer_t *bits) {
 }
 
 void bitbuffer_extract_bytes(bitbuffer_t *bitbuffer, unsigned row,
-                             unsigned pos, uint8_t *out, unsigned len) {
+                             unsigned pos, uint8_t *out, unsigned len)
+{
         uint8_t *bits = bitbuffer->bb[row];
         if (len == 0)
                 return;
@@ -203,12 +212,14 @@ void bitbuffer_extract_bytes(bitbuffer_t *bitbuffer, unsigned row,
 
 // If we make this an inline function instead of a macro, it means we don't
 // have to worry about using bit numbers with side-effects (bit++).
-static inline uint8_t bit_at(const uint8_t *bytes, unsigned bit) {
+static inline uint8_t bit_at(const uint8_t *bytes, unsigned bit)
+{
         return (uint8_t) (bytes[bit >> 3] >> (7 - (bit & 7)) & 1);
 }
 
 unsigned bitbuffer_search(bitbuffer_t *bitbuffer, unsigned row, unsigned start,
-                          const uint8_t *pattern, unsigned pattern_bits_len) {
+                          const uint8_t *pattern, unsigned pattern_bits_len)
+{
         uint8_t *bits = bitbuffer->bb[row];
         unsigned len = bitbuffer->bits_per_row[row];
         unsigned ipos = start;
@@ -232,7 +243,8 @@ unsigned bitbuffer_search(bitbuffer_t *bitbuffer, unsigned row, unsigned start,
 }
 
 unsigned bitbuffer_manchester_decode(bitbuffer_t *inbuf, unsigned row, unsigned start,
-                                     bitbuffer_t *outbuf, unsigned max) {
+                                     bitbuffer_t *outbuf, unsigned max)
+{
         uint8_t *bits = inbuf->bb[row];
         unsigned int len = inbuf->bits_per_row[row];
         unsigned int ipos = start;
@@ -256,7 +268,8 @@ unsigned bitbuffer_manchester_decode(bitbuffer_t *inbuf, unsigned row, unsigned 
 }
 
 unsigned bitbuffer_differential_manchester_decode(bitbuffer_t *inbuf, unsigned row, unsigned start,
-                                                  bitbuffer_t *outbuf, unsigned max) {
+                                                  bitbuffer_t *outbuf, unsigned max)
+{
         uint8_t *bits = inbuf->bb[row];
         unsigned int len = inbuf->bits_per_row[row];
         unsigned int ipos = start;
@@ -302,7 +315,8 @@ unsigned bitbuffer_differential_manchester_decode(bitbuffer_t *inbuf, unsigned r
         return ipos;
 }
 
-static void print_bitrow(uint8_t const *bitrow, unsigned bit_len, unsigned highest_indent, int always_binary) {
+static void print_bitrow(uint8_t const *bitrow, unsigned bit_len, unsigned highest_indent, int always_binary)
+{
         unsigned row_len = 0;
 
         fprintf(stderr, "{%2u} ", bit_len);
@@ -325,7 +339,8 @@ static void print_bitrow(uint8_t const *bitrow, unsigned bit_len, unsigned highe
         fprintf(stderr, "\n");
 }
 
-static void print_bitbuffer(const bitbuffer_t *bits, int always_binary) {
+static void print_bitbuffer(const bitbuffer_t *bits, int always_binary)
+{
         unsigned highest_indent, indent_this_col, indent_this_row;
         unsigned col, row;
 
@@ -355,24 +370,29 @@ static void print_bitbuffer(const bitbuffer_t *bits, int always_binary) {
 //     }
 }
 
-void bitbuffer_print(const bitbuffer_t *bits) {
+void bitbuffer_print(const bitbuffer_t *bits)
+{
         print_bitbuffer(bits, 0);
 }
 
 
-void bitbuffer_debug(const bitbuffer_t *bits) {
+void bitbuffer_debug(const bitbuffer_t *bits)
+{
         print_bitbuffer(bits, 1);
 }
 
-void bitrow_print(uint8_t const *bitrow, unsigned bit_len) {
+void bitrow_print(uint8_t const *bitrow, unsigned bit_len)
+{
         print_bitrow(bitrow, bit_len, 0, 0);
 }
 
-void bitrow_debug(uint8_t const *bitrow, unsigned bit_len) {
+void bitrow_debug(uint8_t const *bitrow, unsigned bit_len)
+{
         print_bitrow(bitrow, bit_len, 0, 1);
 }
 
-int bitrow_snprint(uint8_t const *bitrow, unsigned bit_len, char *str, unsigned size) {
+int bitrow_snprint(uint8_t const *bitrow, unsigned bit_len, char *str, unsigned size)
+{
         if (bit_len == 0 && size > 0) {
                 str[0] = '\0';
         }
@@ -383,7 +403,8 @@ int bitrow_snprint(uint8_t const *bitrow, unsigned bit_len, char *str, unsigned 
         return len;
 }
 
-void bitbuffer_parse(bitbuffer_t *bits, const char *code, int gap) {
+void bitbuffer_parse(bitbuffer_t *bits, const char *code, int gap)
+{
         const char *c;
         int data = 0;
         int width = -1;
@@ -440,7 +461,8 @@ void bitbuffer_parse(bitbuffer_t *bits, const char *code, int gap) {
         }
 }
 
-int bitbuffer_compare_rows(bitbuffer_t *bits, unsigned row_a, unsigned row_b, unsigned max_bits) {
+int bitbuffer_compare_rows(bitbuffer_t *bits, unsigned row_a, unsigned row_b, unsigned max_bits)
+{
         if (max_bits == 0 || bits->bits_per_row[row_a] < max_bits || bits->bits_per_row[row_b] < max_bits) {
                 // full compare, no max_bits or rows too short
                 return (bits->bits_per_row[row_a] == bits->bits_per_row[row_b]
@@ -457,7 +479,8 @@ int bitbuffer_compare_rows(bitbuffer_t *bits, unsigned row_a, unsigned row_b, un
         }
 }
 
-unsigned bitbuffer_count_repeats(bitbuffer_t *bits, unsigned row, unsigned max_bits) {
+unsigned bitbuffer_count_repeats(bitbuffer_t *bits, unsigned row, unsigned max_bits)
+{
         unsigned cnt = 0;
         for (int i = 0; i < bits->num_rows; ++i) {
                 if (bitbuffer_compare_rows(bits, row, i, max_bits)) {
@@ -467,7 +490,8 @@ unsigned bitbuffer_count_repeats(bitbuffer_t *bits, unsigned row, unsigned max_b
         return cnt;
 }
 
-int bitbuffer_find_repeated_row(bitbuffer_t *bits, unsigned min_repeats, unsigned min_bits) {
+int bitbuffer_find_repeated_row(bitbuffer_t *bits, unsigned min_repeats, unsigned min_bits)
+{
         for (int i = 0; i < bits->num_rows; ++i) {
                 if (bits->bits_per_row[i] >= min_bits &&
                     bitbuffer_count_repeats(bits, i, 0) >= min_repeats) {
@@ -477,7 +501,8 @@ int bitbuffer_find_repeated_row(bitbuffer_t *bits, unsigned min_repeats, unsigne
         return -1;
 }
 
-int bitbuffer_find_repeated_prefix(bitbuffer_t *bits, unsigned min_repeats, unsigned min_bits) {
+int bitbuffer_find_repeated_prefix(bitbuffer_t *bits, unsigned min_repeats, unsigned min_bits)
+{
         for (int i = 0; i < bits->num_rows; ++i) {
                 if (bits->bits_per_row[i] >= min_bits &&
                     bitbuffer_count_repeats(bits, i, min_bits) >= min_repeats) {

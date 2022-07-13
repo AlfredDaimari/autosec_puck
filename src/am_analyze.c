@@ -22,7 +22,8 @@
 #define FRAME_END_MIN 50000 /* minimum sample count to detect frame end */
 #define FRAME_PAD 10000 /* number of samples to pad both frame start and end */
 
-am_analyze_t *am_analyze_create(void) {
+am_analyze_t *am_analyze_create(void)
+{
         am_analyze_t *a;
         a = calloc(1, sizeof(am_analyze_t));
         if (!a)
@@ -30,16 +31,19 @@ am_analyze_t *am_analyze_create(void) {
         return a; // NOTE: returns NULL on alloc failure.
 }
 
-void am_analyze_free(am_analyze_t *a) {
+void am_analyze_free(am_analyze_t *a)
+{
         free(a);
 }
 
-void am_analyze_skip(am_analyze_t *a, unsigned n_samples) {
+void am_analyze_skip(am_analyze_t *a, unsigned n_samples)
+{
         a->counter += n_samples;
         a->signal_start = 0;
 }
 
-void am_analyze(am_analyze_t *a, int16_t *am_buf, unsigned n_samples, int debug_output, samp_grab_t *g) {
+void am_analyze(am_analyze_t *a, int16_t *am_buf, unsigned n_samples, int debug_output, samp_grab_t *g)
+{
         unsigned int i;
         int threshold = (a->level_limit ? a->level_limit
                                         : 8000);  // Does not support auto level. Use old default instead.
@@ -110,7 +114,8 @@ void am_analyze(am_analyze_t *a, int16_t *am_buf, unsigned n_samples, int debug_
 }
 
 
-void am_analyze_classify(am_analyze_t *aa) {
+void am_analyze_classify(am_analyze_t *aa)
+{
         unsigned int i, k, max = 0, min = 1000000, t;
         unsigned int delta, p_limit;
         unsigned int a[3], b[2], a_cnt[3], a_new[3];

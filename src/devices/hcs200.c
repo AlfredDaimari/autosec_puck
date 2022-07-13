@@ -35,55 +35,56 @@ rtl_433 -R 0 -X 'n=hcs200,m=OOK_PWM,s=370,l=772,r=9000,g=1500,t=152'
 
 static int hcs200_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    // Reject codes of wrong length
-    if (bitbuffer->bits_per_row[0] != 12 || bitbuffer->bits_per_row[1] != 66)
-        return DECODE_ABORT_LENGTH;
+        if (bitbuffer->bits_per_row[0] != 12 || bitbuffer->bits_per_row[1] != 66)
+                return DECODE_ABORT_LENGTH;   // Reject codes of wrong length
 
-    uint8_t *b = bitbuffer->bb[0];
-    // Reject codes with an incorrect preamble (expected 0xfff)
-    if (b[0] != 0xff || (b[1] & 0xf0) != 0xf0) {
-        decoder_log(decoder, 2, __func__, "Preamble not found");
-        return DECODE_ABORT_EARLY;
-    }
 
-    // Second row is data
-    b = bitbuffer->bb[1];
+        uint8_t *b = bitbuffer->bb[0];
+        // Reject codes with an incorrect preamble (expected 0xfff)
+        if (b[0] != 0xff || (b[1] & 0xf0) != 0xf0) {
+                decoder_log(decoder, 2, __func__, "Preamble not found");
+                return DECODE_ABORT_EARLY;
+        }
 
-    // No need to decode/extract values for simple test
-    if (b[1] == 0xff && b[2] == 0xff && b[3] == 0xff && b[4] == 0xff
+        // Second row is data
+        b = bitbuffer->bb[1];
+
+        // No need to decode/extract values for simple test
+        if (b[1] == 0xff && b[2] == 0xff && b[3] == 0xff && b[4] == 0xff
             && b[5] == 0xff && b[6] == 0xff && b[7] == 0xff) {
-        decoder_log(decoder, 2, __func__, "DECODE_FAIL_SANITY data all 0xff");
-        return DECODE_FAIL_SANITY;
-    }
+                decoder_log(decoder, 2, __func__, "DECODE_FAIL_SANITY data all 0xff");
+                return DECODE_FAIL_SANITY;
+        }
 
-    // The transmission is LSB first, big endian.
-    uint32_t encrypted = ((unsigned)reverse8(b[3]) << 24) | (reverse8(b[2]) << 16) | (reverse8(b[1]) << 8) | (reverse8(b[0]));
-    int serial         = (reverse8(b[7] & 0xf0) << 20) | (reverse8(b[6]) << 16) | (reverse8(b[5]) << 8) | (reverse8(b[4]));
-    int btn            = (b[7] & 0x0f);
-    int btn_num        = (btn & 0x08) | ((btn & 0x01) << 2) | (btn & 0x02) | ((btn & 0x04) >> 2); // S3, S0, S1, S2
-    int learn          = (b[7] & 0x0f) == 0x0f;
-    int battery_low    = (b[8] & 0x80) == 0x80;
-    int repeat         = (b[8] & 0x40) == 0x40;
+        // The transmission is LSB first, big endian.
+        uint32_t encrypted =
+                ((unsigned) reverse8(b[3]) << 24) | (reverse8(b[2]) << 16) | (reverse8(b[1]) << 8) | (reverse8(b[0]));
+        int serial = (reverse8(b[7] & 0xf0) << 20) | (reverse8(b[6]) << 16) | (reverse8(b[5]) << 8) | (reverse8(b[4]));
+        int btn = (b[7] & 0x0f);
+        int btn_num = (btn & 0x08) | ((btn & 0x01) << 2) | (btn & 0x02) | ((btn & 0x04) >> 2); // S3, S0, S1, S2
+        int learn = (b[7] & 0x0f) == 0x0f;
+        int battery_low = (b[8] & 0x80) == 0x80;
+        int repeat = (b[8] & 0x40) == 0x40;
 
-    char encrypted_str[9];
-    sprintf(encrypted_str, "%08X", encrypted);
-    char serial_str[9];
-    sprintf(serial_str, "%07X", serial);
+        char encrypted_str[9];
+        sprintf(encrypted_str, "%08X", encrypted);
+        char serial_str[9];
+        sprintf(serial_str, "%07X", serial);
 
-    /* clang-format off */
-    data_t *data = data_make(
-            "model",            "",             DATA_STRING,    "Microchip-HCS200",
-            "id",               "",             DATA_STRING,    serial_str,
-            "battery_ok",       "Battery",      DATA_INT,       !battery_low,
-            "button",           "Button",       DATA_INT,       btn_num,
-            "learn",            "Learn mode",   DATA_INT,       learn,
-            "repeat",           "Repeat",       DATA_INT,       repeat,
-            "encrypted",        "",             DATA_STRING,    encrypted_str,
-            NULL);
-    /* clang-format on */
+        /* clang-format off */
+        data_t *data = data_make(
+                "model", "", DATA_STRING, "Microchip-HCS200",
+                "id", "", DATA_STRING, serial_str,
+                "battery_ok", "Battery", DATA_INT, !battery_low,
+                "button", "Button", DATA_INT, btn_num,
+                "learn", "Learn mode", DATA_INT, learn,
+                "repeat", "Repeat", DATA_INT, repeat,
+                "encrypted", "", DATA_STRING, encrypted_str,
+                NULL);
+        /* clang-format on */
 
-    decoder_output_data(decoder, data);
-    return 1;
+        decoder_output_data(decoder, data);
+        return 1;
 }
 
 static char *output_fields[] = {
