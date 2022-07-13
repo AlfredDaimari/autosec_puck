@@ -61,6 +61,10 @@ class RollingKeyFobs:
         print("key fob to be sent")
         for kfb in keyfob_tb_snt:
             print(kfb)
+            print("===== =====")
+
+        print("current rolling key_fobs struct")
+        print(self)
 
         # TODO: connect with RfMessage
         # rf_message = RfMessage(msg, MOD_2FSK | MANCHESTER, 4000, 230, self.dev)
@@ -84,12 +88,15 @@ class RollingKeyFobs:
 
         if len(self.key_fobs_list) == 0:
             self.key_fobs_list = [[tmp_keyfob_pkt]]
+            print("new key fob packet received")
         else:
             if self.key_fobs_list[-1][-1].name != tmp_keyfob_pkt.name:
                 print("key fob packet is not the same type as previous. dropping key fob packet")
 
             elif (cur_time - self.key_fobs_list[-1][-1].pk_recv_time) < 1000000000:
                 self.key_fobs_list[-1].append(tmp_keyfob_pkt)
+                print("appending to previous packet")
 
             else:
+                print("new key fob packet received")
                 self.key_fobs_list.append([tmp_keyfob_pkt])
