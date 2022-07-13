@@ -13,13 +13,13 @@ class RollingKeyFobs:
     def __init__(self) -> None:
         self.key_fobs_list = []
 
-        self.yd_stick = RfSender()
+        # self.yd_stick = RfSender()
         print("the yardstick has been initialized")
 
         # TODO: configure for raspberry bi
-        self.jammer = Jammer("input_file", "mode", "freq", "sample")
+        # self.jammer = Jammer("input_file", "mode", "freq", "sample")
         print("the jammer has been initialized")
-        self.jammer.start()
+        # self.jammer.start()
 
     def __len__(self):
         return len(self.key_fobs_list)

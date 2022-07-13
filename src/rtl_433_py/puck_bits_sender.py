@@ -27,18 +27,26 @@ class PuckBitsYdSenderThread(threading.Thread):
         if not isinstance(rolling_key_fobs, RollingKeyFobs):
             raise TypeError("rolling_key_fob is not an instance of RollingKeyFobs")
 
-        if not isinstance(lock, threading.RLock):
+        t_type = type(threading.RLock())
+        if not isinstance(lock, t_type):
             raise TypeError("lock is not an instance of threading.RLock")
 
         threading.Thread.__init__(self)
         self.name = name
         self.lock = lock
         self.rolling_key_fobs = rolling_key_fobs
+        self.shutdown = threading.Event()
 
     def run(self) -> None:
-        while True:
+        while not self.shutdown.is_set():
             self.lock.acquire()
             if self.rolling_key_fobs.dispatchable:
                 self.rolling_key_fobs.dequeue_send()
             self.lock.release()
             sleep(0.35)
+
+    def shutdown_thread(self):
+        """
+        terminate the thread
+        """
+        self.shutdown.set()

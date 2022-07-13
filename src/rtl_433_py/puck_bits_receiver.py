@@ -60,7 +60,9 @@ class PuckBitsReceiverThread(threading.Thread):
 
     def __init__(self, name: str, lock: threading.RLock, rolling_key_fobs: RollingKeyFobs) -> None:
         threading.Thread.__init__(self)
-        if not isinstance(lock, threading.RLock):
+
+        t_type = type(threading.RLock())
+        if not isinstance(lock, t_type):
             raise TypeError("lock is not an instance of threading.RLock")
 
         if not isinstance(rolling_key_fobs, RollingKeyFobs):
@@ -69,8 +71,14 @@ class PuckBitsReceiverThread(threading.Thread):
         self.name = name
         self.lock = lock
         self.rolling_key_fobs = rolling_key_fobs
+        self.mainloop = GLib.MainLoop()
 
     def run(self) -> None:
         puck_bits_receiver = PuckBitsReceiver(self.lock, self.rolling_key_fobs)
-        mainloop = GLib.mainloop()
-        mainloop.run()
+        self.mainloop.run()
+
+    def shutdown_thread(self):
+        """
+        shutdown the thread
+        """
+        self.mainloop.quit()
