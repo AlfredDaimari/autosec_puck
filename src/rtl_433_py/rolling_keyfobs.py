@@ -1,3 +1,4 @@
+from time import time_ns as tns
 from rf import *
 from keyfob import *
 from jammer import *
@@ -5,26 +6,31 @@ from jammer import *
 
 class RollingKeyFobs:
     """"
-    data structure to hold the rolling key fobs,
-    sends out one key fob when 2 valid key fobs are stored
+    queue to hold the rolling key fob
+    sends out the first key fob in, when the length is 2
     """
 
-    def __init__(self, dev: object, jam: object) -> None:
-        """
-        :param dev: rf device (instance of RfSender)
-        :param jam: jammer device (instance of Jammer)
-        """
+    def __init__(self) -> None:
         self.key_fobs_list = []
-        if not isinstance(dev, RfSender):
-            raise TypeError("dev is not an instance of RfSender")
-        self.dev = dev
 
-        if not isinstance(jam, Jammer):
-            raise TypeError("jam is not an instance of Jammer")
-        self.jam = jam
+        self.yd_stick = RfSender()
+        print("the yardstick has been initialized")
+
+        # TODO: configure for raspberry bi
+        self.jammer = Jammer("input_file", "mode", "freq", "sample")
+        print("the jammer has been initialized")
+        self.jammer.start()
 
     def __len__(self):
         return len(self.key_fobs_list)
+
+    def __str__(self):
+        str_ = ""
+        for key_fb_list in self.key_fobs_list:
+            for key_fb in key_fb_list:
+                str_ += str(key_fb) + '--'
+            str_ += "\n--  next key fob --  \n"
+        return str_
 
     @property
     def dispatchable(self) -> bool:
@@ -33,13 +39,11 @@ class RollingKeyFobs:
         and if the previous one can be sent or not
         """
         if len(self) > 1:
-            if self.key_fobs_list[0].complete and self.key_fobs_list[1].complete:
+            cur_time = tns()
+            if (cur_time - self.key_fobs_list[-1][-1].pk_recv_time) < 800000000:
                 return True
-            else:
-                self.__shift()
-                return self.dispatchable
-        else:
-            return False
+
+        return False
 
     def __shift(self):
         """
@@ -47,34 +51,45 @@ class RollingKeyFobs:
         """
         return self.key_fobs_list.pop(0)
 
-    def __send(self, msg: object) -> None:
+    def send_fi(self) -> None:
         """
-        send a message using the yardstick
+        send the first message in the queue
         :param msg: instance of key fob packet
         """
-        rf_message = RfMessage(msg, MOD_2FSK | MANCHESTER, 4000, 230, self.dev)
+        keyfob_tb_snt = self.__shift()
 
-        self.jam.stop()
-        rf_message.send()
-        self.jam.start()
+        print("key fob to be sent")
+        for kfb in keyfob_tb_snt:
+            print(kfb)
 
-    def push(self, bit_string: str, gap_to_prev_bitpk: int) -> None:
+        # TODO: connect with RfMessage
+        # rf_message = RfMessage(msg, MOD_2FSK | MANCHESTER, 4000, 230, self.dev)
+        # self.jam.stop()
+        # rf_message.send()
+        # self.jam.start()
+
+        del keyfob_tb_snt
+
+    def push(self, key_fb_packet: list) -> None:
         """
         add a new key fob to list or concatenate with previous key fob \n
-        :param bit_string: a string of bits
-        :param gap_to_prev_bitpk: gap to the previous received string of bits
+        :param key_fb_packet: a list in the form ["bits:gap", "bits:gap", "name_of_car"]
         """
-        tmp_keyfob_pkt = KeyFobPacket(bit_string, gap_to_prev_bitpk)
-        apnd_bool = False
 
-        if len(self.key_fobs_list) > 0:
-            lst_key_fob = self.key_fobs_list[-1]
-            apnd_bool = lst_key_fob.concatenate(tmp_keyfob_pkt)
+        if len(key_fb_packet) < 2:
+            print("key fob packet is not valid. dropping key fob packet")
 
-        if not apnd_bool:
-            self.key_fobs_list.append(tmp_keyfob_pkt)
+        cur_time = tns()
+        tmp_keyfob_pkt = KeyFobPacket(key_fb_packet[:-1], key_fb_packet[-1], cur_time)
 
-        if self.dispatchable:
-            keyfob_tb_snt = self.__shift()
-            self.__send(keyfob_tb_snt)
-            del keyfob_tb_snt
+        if len(self.key_fobs_list) == 0:
+            self.key_fobs_list = [[tmp_keyfob_pkt]]
+        else:
+            if self.key_fobs_list[-1][-1].name != tmp_keyfob_pkt.name:
+                print("key fob packet is not the same type as previous. dropping key fob packet")
+
+            elif (cur_time - self.key_fobs_list[-1][-1].pk_recv_time) < 1000000000:
+                self.key_fobs_list[-1].append(tmp_keyfob_pkt)
+
+            else:
+                self.key_fobs_list.append([tmp_keyfob_pkt])

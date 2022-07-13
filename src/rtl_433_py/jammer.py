@@ -20,6 +20,7 @@ class Jammer:
         if self.proc is not None:
             raise ChildProcessError("Jamming process is already running")
         self.proc = subprocess.Popen(["rpitx", "-i", self.i, "-m", self.m, "-f", self.f, "-s", self.s, "-l"])
+        print("the jammer is now jamming")
 
     def stop(self) -> None:
         """
@@ -29,4 +30,5 @@ class Jammer:
             raise ChildProcessError("Jamming process is not running")
         subprocess.Popen.kill(self.proc)
         self.proc = None
+        print("the jammer has stopped jamming")
 

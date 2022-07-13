@@ -10,7 +10,7 @@ class RfSender:
     """
 
     def __init__(self) -> None:
-        self.device = RfCat()
+        self.device = None  # RfCat()
 
     def send_message(self, rfmsg: object, mod_msg: list) -> None:
         """

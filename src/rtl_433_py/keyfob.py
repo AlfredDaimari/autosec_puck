@@ -25,6 +25,7 @@ class BitPack:
     methods: \n
     convert_to_hex() \n
     convert_to_binary() \n
+    convert_to_binary() \n
     """
 
     def __init__(self, bit_string: any, gap_to_prev_bitpk: int) -> None:
@@ -36,6 +37,9 @@ class BitPack:
         self.time_to_prev_bitpk = gap_to_prev_bitpk / 250000
         self.bit_pk = bit_string
         self.__num_type = 2  # numeral system used to represent the bit_pk
+
+    def __str__(self):
+        return self.bit_pk
 
     def __len__(self) -> int:
         return len(self.bit_pk)
@@ -92,79 +96,39 @@ class KeyFobPacket:
 
     attributes: \n
     packets: instances of BitPackets \n
-    packet_status: \n
-    0 - packet still not fully formed, still accepting more bits \n
-    1 - packet fully formed, not accepting any more bits \n
-    --- \n
+    pk_recv_time: the time received (unix time ns format)
     """
 
-    def __init__(self, bit_string: str, gap_to_prev_bitpk: int) -> None:
-        self.packets = [BitPack(bit_string, gap_to_prev_bitpk)]
-        self.packet_status = 0
-        self.__set_packet_validity()
+    def __init__(self, key_bits: list, car_name: str, pk_recv_time: int) -> None:
+        self.name = car_name
+        self.packets = [BitPack(b.split(':')[0], int(b.split(':')[1])) for b in key_bits]
+        self.pk_recv_time = pk_recv_time
 
     def __len__(self):
         return len(self.packets)
 
-    @property
-    def time_to_prev_keyfob(self) -> float:
-        """
-        get key fob packet distance to previous key fob packet
-        """
-        return self.time_to_prev_pk(0)
+    def __str__(self):
+        str_ = ""
+        for s in self.packets:
+            str_ += s.__str__()
+        return str_
 
-    def time_to_prev_pk(self, ind: int) -> float:
+    @classmethod
+    def are_same(cls, key_fb1: object, key_fb2: object) -> bool:
+        """
+        pointless !!
+        """
+        if (not isinstance(key_fb1, KeyFobPacket)) or (not isinstance(key_fb2, KeyFobPacket)):
+            raise TypeError('key_fb1 or key_fb2 are not instances of KeyFobPacket')
+
+        return False
+
+    def time_to_prev_bchunk(self, ind: int) -> float:
         """
         :param ind: the index of the packet in key fobs
         :return: returns the time to prev packet
         """
         return self.packets[ind].time_to_prev_bitpk
-
-    def __get_packet_validity(self) -> bool:
-        return self.packet_status == 1
-
-    def __set_packet_validity(self) -> None:
-        """
-        check if key fob packet is fully formed or not
-        """
-        total_bits = 0
-        for pk in self.packets:
-            total_bits += len(pk)
-        if not total_bits < 224:
-            self.packet_status = 1  # packet is fully formed, should not allow appending of more bits
-
-    @property
-    def complete(self) -> bool:
-        """
-        :return: if the key fob packet is 'valid' (has a valid length)
-        """
-        return self.__get_packet_validity()
-
-    def __concatenate(self, key_fb_pkt) -> bool:
-        """
-        validate and concatenate to key fob packets together
-        """
-        if not isinstance(key_fb_pkt, KeyFobPacket):
-            raise TypeError("key_fb_packet is not an instance of KeyFobPacket")
-
-        if key_fb_pkt.time_to_prev_keyfob < 1200.0:
-            self.packets.append(key_fb_pkt.packets[0])
-            return True
-        else:
-            return False
-
-    def concatenate(self, key_fb_pkt) -> bool:
-        """
-        concatenates two packets if the gap between them is 'very less' \n
-        :param key_fb_pkt: An instance of class KeyFobPacket
-        :return: bool : whether concatenation was successful or not
-        """
-        if not self.__get_packet_validity():
-            concat_ = self.__concatenate(key_fb_pkt)
-            self.__set_packet_validity()
-            return concat_
-        else:
-            return False
 
     def convert_to_hex(self) -> None:
         """
