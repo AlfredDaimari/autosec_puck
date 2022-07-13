@@ -23,7 +23,7 @@ int send_bits_to_receiver(char *const msg);
 
 int init_dbus_connection(void);
 
-void send_puck_bits(const bitbuffer_t *bits);
+void send_puck_bits(bitbuffer_t *bits);
 
 #endif // RTL433_PUCK_BITS_SENDER_H
 

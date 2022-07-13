@@ -9,6 +9,7 @@
 #include <stdbool.h>
 #include <ctype.h>
 #include <dbus/dbus.h>
+#include <find_car.h>
 
 const char INTERFACE_NAME[] = "org.autosec.PuckBitsReceiverInterface";
 const char BUS_NAME[] = "org.autosec.PuckBitsReceiver";
@@ -19,7 +20,40 @@ int DBUS_RET;
 DBusConnection *DBUS_CONN;
 DBusError err;
 
-int send_message_through_dbus(char *const msg) {
+// not needed
+static void concat_bits(uint8_t const *bitrow, unsigned bit_len, int gap)
+{
+        /// data format fo#include "bitbuffer.h"38 * 8];
+        char str[50 * 238 * 8];
+        // appending the bits from bit buffer to array
+        for (unsigned bit = 0; bit < bit_len; bit++) {
+                if (bitrow[bit / 8] & (0x80 >> (bit % 8))) {
+                        str[bit] = '1';
+                } else {
+                        str[bit] = '0';
+                }
+
+        }
+
+        char gap_to_string[50];
+        sprintf(gap_to_string, "%d", gap);  // converts int to string
+
+        str[bit_len + 1] = ':';
+
+        //appending the gap to the str
+        for (unsigned j = 0; j < sizeof(gap_to_string) / sizeof(gap_to_string[0]); j++) {
+                str[bit_len + 2 + j] = gap_to_string[j];
+        }
+        /// printing the string
+        int rt;
+        rt = send_bits_to_receiver(str);
+        if (rt == -1) {
+                fprintf(stderr, "error: could send message to receiver");
+        }
+}
+
+int send_message_through_dbus(char *const msg)
+{
         DBusMessage *dmsg;
         DBusMessageIter args;
 
@@ -48,12 +82,14 @@ int send_message_through_dbus(char *const msg) {
         return 0;
 }
 
-int send_bits_to_receiver(char *const msg) {
+int send_bits_to_receiver(char *const msg)
+{
         int rt = send_message_through_dbus(msg);
         return rt;
 }
 
-int init_dbus_connection() {
+int init_dbus_connection()
+{
 
         dbus_error_init(&err);
         DBUS_CONN = dbus_bus_get(DBUS_BUS_SYSTEM, &err);
@@ -89,56 +125,22 @@ int init_dbus_connection() {
         return 0;
 }
 
-
-static void concat_bits(uint8_t const *bitrow, unsigned bit_len, int gap) {
-        /// data format fo#include "bitbuffer.h"38 * 8];
+void send_puck_bits(bitbuffer_t *bitbuffer)
+{
         char str[50 * 238 * 8];
-        // appending the bits from bit buffer to array
-        for (unsigned bit = 0; bit < bit_len; bit++) {
-                if (bitrow[bit / 8] & (0x80 >> (bit % 8))) {
-                        str[bit] = '1';
-                } else {
-                        str[bit] = '0';
+        (void) memset(str, 0, sizeof(str));
+        /*
+         * will need to improve this, make it more readable
+        */
+
+        int fn_index = find_car(bitbuffer);
+        (void) fprintf(stderr, "The fn index is %d \n", fn_index);
+        if (fn_index != -1) {
+                (*create_car_bit_pk[fn_index])(bitbuffer, str);
+                (void) send_bits_to_receiver(str);
+
+                if (bitbuffer->num_rows >= BITBUF_ROWS) {
+                        fprintf(stderr, "... Maximum number of rows reached. Message is likely truncated.\n");
                 }
-
-        }
-
-        char gap_to_string[50];
-        sprintf(gap_to_string, "%d", gap);  // converts int to string
-
-        str[bit_len + 1] = ':';
-
-        //appending the gap to the str
-        for (unsigned j = 0; j < sizeof(gap_to_string) / sizeof(int); j++) {
-                str[bit_len + 2 + j] = gap_to_string[j];
-        }
-        /// printing the string
-        int rt;
-        rt = send_bits_to_receiver(str);
-        if (rt == -1){
-                fprintf(stderr, "error: could send message to receiver");
-        }
-}
-
-void send_puck_bits(const bitbuffer_t *bits) {
-        unsigned highest_indent, indent_this_col, indent_this_row;
-        unsigned col, row;
-
-        /* Figure out the longest row of bit to get the highest_indent
-         */
-        highest_indent = sizeof("[dd] {dd} ") - 1;
-        for (row = indent_this_row = 0; row < bits->num_rows; ++row) {
-                for (col = indent_this_col = 0; col < (unsigned) (bits->bits_per_row[row] + 7) / 8; ++col) {
-                        indent_this_col += 2 + 1;
-                }
-                indent_this_row = indent_this_col;
-                if (indent_this_row > highest_indent)
-                        highest_indent = indent_this_row;
-        }
-        for (row = 0; row < bits->num_rows; ++row) {
-                concat_bits(bits->bb[row], bits->bits_per_row[row], bits->gaps_per_row[row + 1]);
-        }
-        if (bits->num_rows >= BITBUF_ROWS) {
-                fprintf(stderr, "... Maximum number of rows reached. Message is likely truncated.\n");
         }
 }
