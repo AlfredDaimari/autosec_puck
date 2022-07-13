@@ -42,6 +42,8 @@ add_library(r_433 STATIC
         term_ctl.c
         util.c
         write_sigrok.c
+        concat.c
+        find_car.c
         devices/abmt.c
         devices/acurite.c
         devices/acurite_01185m.c
@@ -232,6 +234,8 @@ add_library(r_433 STATIC
         devices/x10_rf.c
         devices/x10_sec.c
         devices/yale_hsa.c
+        cars/toyota_innova.c
+        cars/maruti_nippon.c
         )
 
 if ("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
