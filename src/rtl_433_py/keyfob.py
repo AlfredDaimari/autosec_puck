@@ -150,3 +150,12 @@ class KeyFobPacket:
         """
         for pkt in self.packets:
             pkt.convert_to_decimal()
+
+    def get_conc_pkt(self) -> str:
+        """
+        :return: string of concatenated bits
+        """
+        pkt = ''
+        for bpk in self.packets:
+            pkt += bpk.bit_pk
+        return pkt

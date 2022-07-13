@@ -13,7 +13,7 @@ class RollingKeyFobs:
     def __init__(self) -> None:
         self.key_fobs_list = []
 
-        # self.yd_stick = RfSender()
+        self.yd_stick = None # RfSender()
         print("the yardstick has been initialized")
 
         # TODO: configure for raspberry bi
@@ -67,9 +67,9 @@ class RollingKeyFobs:
         print(self)
 
         # TODO: connect with RfMessage
-        # rf_message = RfMessage(msg, MOD_2FSK | MANCHESTER, 4000, 230, self.dev)
+        rf_message = RfMessage(keyfob_tb_snt, MOD_ASK_OOK, 4000, 230, self.yd_stick)
         # self.jam.stop()
-        # rf_message.send()
+        rf_message.send()
         # self.jam.start()
 
         del keyfob_tb_snt

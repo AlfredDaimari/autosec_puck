@@ -1,3 +1,4 @@
+from typing import List
 from struct import *
 from rflib import *
 from time import sleep
@@ -12,7 +13,7 @@ class RfSender:
     def __init__(self) -> None:
         self.device = None  # RfCat()
 
-    def send_message(self, rfmsg: object, mod_msg: list) -> None:
+    def send_message(self, rfmsg: object, mod_msg: List[str]) -> None:
         """
         Send a message using the rf device \n
         :param rfmsg: instance of class RfMessage
@@ -27,14 +28,13 @@ class RfSender:
         self.device.setMdmDRate(rfmsg.baud_rate)  # This sets the modulation
         self.device.setModeTX()  # This is the transmitter mode
 
-        for i in range(len(mod_msg[0])):
+        for msg in mod_msg:
             try:
-                sleep(mod_msg[1][i])
-                self.device.RFxmit(mod_msg[0][i])
+                self.device.RFxmit(msg)
+                sleep(0.01)
             except:
                 print("Error in sending message!")
                 return
-
         self.device.setModeIDLE()
         print("Message sent!")
 
@@ -44,7 +44,8 @@ class RfMessage:
     Create an rf message to be sent using RfSender \n
     """
 
-    def __init__(self, msg: object, mod_type: str, baud_rate: int, pk_len: int, dev: object, freq=433920000) -> None:
+    def __init__(self, msg: List[KeyFobPacket], mod_type: str, baud_rate: int, pk_len: int, yd_stick: RfSender,
+                 freq=433920000) -> None:
         """
         Create RfMessage \n
         :param msg: the message to send
@@ -54,30 +55,34 @@ class RfMessage:
         :param dev: the rf device (yardstick) (should be an instance of class RfSender)
         :param freq:  the frequency in which to send the packet in
         """
-        if not isinstance(msg, KeyFobPacket):
+        if not isinstance(msg[0], KeyFobPacket):
             raise TypeError("msg is not an instance of KeyFobPacket")
+
+        if not isinstance(yd_stick, RfSender):
+            raise TypeError("yd_stick is not an instance of RfSender")
 
         self.message = msg
         self.frequency = freq
         self.modulation_type = mod_type
         self.baud_rate = baud_rate
         self.packet_length = pk_len
-        self.dev = dev
+        self.yd_stick = yd_stick
 
     def __create_dispatchable_message(self) -> list:
         """
         Will create a dispatchable message, along with wait times
         :return: returns [[array of  packets to send][amount of time to wait send the next message]]
         """
-        self.message.convert_to_decimal()
-        pkt_arr = []
-        time_arr = []
-        for i in range(len(self.message)):
-            packed_msg = pack(">Q", self.message.packets[i])
-            pkt_arr.append(packed_msg)
-            time_arr.append(self.message.time_to_prev_pk(i))
+        for kfb in self.message:
+            kfb.convert_to_hex()
 
-        return [pkt_arr, time_arr]
+        pkt_arr = []
+
+        for kfb in self.message:
+            packed_msg = pack(">Q", kfb.get_conc_pkt())
+            pkt_arr.append(packed_msg)
+
+        return pkt_arr
 
     def send(self) -> None:
         """
