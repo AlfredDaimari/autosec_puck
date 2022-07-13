@@ -11,13 +11,13 @@
 
 import threading
 from rolling_keyfobs import RollingKeyFobs
-from typing import TypeVar
+from time import sleep
 
 
 class PuckBitsYdSenderThread(threading.Thread):
     """
     Yardstick sender thread \n
-    checks every 0.5s if there is a valid key fob to send
+    checks every 0.35s if there is a valid key fob to send
     """
 
     def __init__(self, name: str, lock: threading.RLock, rolling_key_fobs: RollingKeyFobs) -> None:
@@ -36,7 +36,9 @@ class PuckBitsYdSenderThread(threading.Thread):
         self.rolling_key_fobs = rolling_key_fobs
 
     def run(self) -> None:
-        self.lock.acquire()
-        if self.rolling_key_fobs.dispatchable:
-            self.rolling_key_fobs.dequeue_send()
-        self.lock.release()
+        while True:
+            self.lock.acquire()
+            if self.rolling_key_fobs.dispatchable:
+                self.rolling_key_fobs.dequeue_send()
+            self.lock.release()
+            sleep(0.35)
