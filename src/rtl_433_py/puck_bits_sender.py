@@ -38,5 +38,5 @@ class PuckBitsYdSenderThread(threading.Thread):
     def run(self) -> None:
         self.lock.acquire()
         if self.rolling_key_fobs.dispatchable:
-            self.rolling_key_fobs.send_fi()
+            self.rolling_key_fobs.dequeue_send()
         self.lock.release()

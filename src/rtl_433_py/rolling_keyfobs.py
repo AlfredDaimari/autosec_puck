@@ -51,7 +51,7 @@ class RollingKeyFobs:
         """
         return self.key_fobs_list.pop(0)
 
-    def send_fi(self) -> None:
+    def dequeue_send(self) -> None:
         """
         send the first message in the queue
         :param msg: instance of key fob packet
