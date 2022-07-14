@@ -8,11 +8,11 @@
 
 int check_for_maruti_nippon(bitbuffer_t *bitbuffer)
 {
-        if (bitbuffer->bits_per_row[0] < 23 || bitbuffer->bits_per_row[1] < 197) {
-                return 0;
+        if (bitbuffer->bits_per_row[0] > 20 && bitbuffer->bits_per_row[1] > 196) {
+                return 1;
         }
 
-        return 1;
+        return -1;
 }
 // TODO: make a concatenating gap function
 
