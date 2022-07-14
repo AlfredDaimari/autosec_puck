@@ -70,13 +70,13 @@ class RfSender:
 
         for msg in mod_msg:
             try:
-                print("sending message!")
                 self.yd_stick.RFxmit(msg)
+                sleep(0.1)
             except:
                 print("Error in sending message!")
                 return
         self.yd_stick.setModeIDLE()
-        print("Message sent!")
+        print(f"total kfbs sent - {len(mod_msg)}")
 
 
 class RfMessage:
