@@ -10,8 +10,9 @@
 #
 
 import threading
-from rolling_keyfobs import RollingKeyFobs
 from time import sleep
+from rf import YDSendPacketEvent
+from rolling_keyfobs import RollingKeyFobs
 
 
 class PuckBitsYdSenderThread(threading.Thread):
@@ -20,9 +21,11 @@ class PuckBitsYdSenderThread(threading.Thread):
     checks every 0.35s if there is a valid key fob to send
     """
 
-    def __init__(self, name: str, lock: threading.RLock, rolling_key_fobs: RollingKeyFobs) -> None:
+    def __init__(self, name: str, lock: threading.RLock, rolling_key_fobs: RollingKeyFobs,
+                 yd_sending: YDSendPacketEvent) -> None:
         """
         :param name: name of thread
+        :param lock: lock for accessing rolling_key_fobs
         """
         if not isinstance(rolling_key_fobs, RollingKeyFobs):
             raise TypeError("rolling_key_fob is not an instance of RollingKeyFobs")
@@ -31,16 +34,21 @@ class PuckBitsYdSenderThread(threading.Thread):
         if not isinstance(lock, t_type):
             raise TypeError("lock is not an instance of threading.RLock")
 
+        if not isinstance(yd_sending, YDSendPacketEvent):
+            raise TypeError('yd_sending is not an instance of YDSendPacketEvent')
+
         threading.Thread.__init__(self)
         self.name = name
         self.lock = lock
         self.rolling_key_fobs = rolling_key_fobs
+        self.yd_sending = yd_sending
         self.shutdown = threading.Event()
 
     def run(self) -> None:
         while not self.shutdown.is_set():
             self.lock.acquire()
             if self.rolling_key_fobs.dispatchable:
+                self.yd_sending.set_sending()
                 self.rolling_key_fobs.dequeue_send()
             self.lock.release()
             sleep(0.35)

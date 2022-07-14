@@ -40,7 +40,7 @@ class RollingKeyFobs:
         """
         if len(self) > 1:
             cur_time = tns()
-            if (cur_time - self.key_fobs_list[-1][-1].pk_recv_time) < 800000000:
+            if (cur_time - self.key_fobs_list[-1][-1].pk_recv_time) > 800000000:
                 return True
 
         return False

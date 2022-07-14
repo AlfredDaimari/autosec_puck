@@ -3,6 +3,7 @@
 import threading
 import signal
 from time import sleep
+from rf import YDSendPacketEvent
 from rolling_keyfobs import RollingKeyFobs
 from puck_bits_receiver import PuckBitsReceiverThread
 from puck_bits_sender import PuckBitsYdSenderThread
@@ -21,8 +22,9 @@ if __name__ == "__main__":
     lock = threading.RLock()
 
     try:
-        thread1 = PuckBitsReceiverThread("thread1", lock, rolling_key_fobs)
-        thread2 = PuckBitsYdSenderThread("thread2", lock, rolling_key_fobs)
+        yd_sending = YDSendPacketEvent()
+        thread1 = PuckBitsReceiverThread("thread1", lock, rolling_key_fobs, yd_sending)
+        thread2 = PuckBitsYdSenderThread("thread2", lock, rolling_key_fobs, yd_sending)
         thread1.start()
         thread2.start()
 

@@ -1,8 +1,44 @@
+import threading
+from time import sleep
 from typing import List
 from struct import *
 from rflib import *
-from time import sleep
 from keyfob import KeyFobPacket
+
+
+class YDSendPacketEvent(threading.Event):
+    """
+    this class is used to synchronize the two threads when there is a sending event going on \n
+    -----
+    Attributes: \n
+    self.status: False (not sending), True (sending)
+    """
+
+    def __init__(self):
+        threading.Event.__init__()
+        self.status = False
+
+    def set_sending(self) -> None:
+        """
+        starts sending event \n
+        stops sending event in 0.25 seconds \n
+        """
+        self.set()
+        self.status = True
+        self.__set_not_sending()
+
+    def __stop_sending_in_025(self) -> None:
+        """
+        changes status of event to not sending in 0.25 seconds
+        """
+        sleep(0.25)
+        self.clear()
+        self.status = False
+
+    def __set_not_sending(self):
+        new_thread = threading.Thread(target=self.__stop_sending_in_025, args=())
+        new_thread.start()
+        del new_thread
 
 
 class RfSender:
@@ -89,4 +125,4 @@ class RfMessage:
         sends message using the yardstick
         """
         dsp_msg = self.__create_dispatchable_message()
-        self.dev.send_message(self, dsp_msg)
+        self.yd_stick.send_message(self, dsp_msg)
