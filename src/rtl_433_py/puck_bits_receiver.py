@@ -49,13 +49,13 @@ class PuckBitsReceiver(dbus.service.Object):
         dt_string = now.strftime("%H:%M:%S %d/%m/%Y")
         print(f"received: {bits} at {dt_string}")
 
-        self.lock.acquire()
         # only push bits when yard stick is not sending, else we may capture the sent-out bits
         if not self.yd_sending.is_set():
+            self.lock.acquire()
             self.rolling_key_fobs.push(bits.split('-'))
+            self.lock.release()
         else:
             print("received packets while yd_stick was sending, dropping erroneous packets")
-        self.lock.release()
 
         return "saibo"
 

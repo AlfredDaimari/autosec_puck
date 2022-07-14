@@ -47,10 +47,13 @@ class PuckBitsYdSenderThread(threading.Thread):
     def run(self) -> None:
         while not self.shutdown.is_set():
             self.lock.acquire()
+
             if self.rolling_key_fobs.dispatchable:
                 self.yd_sending.set_sending()
                 self.rolling_key_fobs.dequeue_send()
+                self.yd_sending.unset_sending()
             self.lock.release()
+
             sleep(0.35)
 
     def shutdown_thread(self):

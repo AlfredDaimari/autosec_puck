@@ -54,25 +54,24 @@ class RollingKeyFobs:
     def dequeue_send(self) -> None:
         """
         send the first message in the queue
-        :param msg: instance of key fob packet
         """
-        keyfob_tb_snt = self.__shift()
+        kfbs_to_be_sent = self.__shift()
 
-        print("key fob to be sent")
-        for kfb in keyfob_tb_snt:
-            print(kfb)
-            print("===== =====")
-
-        print("current rolling key_fobs struct")
-        print(self)
+        print("key fobs to be sent")
+        for kfb in kfbs_to_be_sent:
+            print(kfb, " -- ", end="")
+        print("")   # new line
 
         # TODO: connect with RfMessage
-        rf_message = RfMessage(keyfob_tb_snt, MOD_ASK_OOK, 4000, 1, self.yd_stick)
+        rf_message = RfMessage(kfbs_to_be_sent, MOD_ASK_OOK, 4000, 1, self.yd_stick)
         # self.jam.stop()
         rf_message.send()
         # self.jam.start()
 
-        del keyfob_tb_snt
+        print("current rolling key_fobs struct")
+        print(self)
+
+        del kfbs_to_be_sent
 
     def push(self, key_fb_packet: list) -> None:
         """
@@ -84,19 +83,19 @@ class RollingKeyFobs:
             print("key fob packet is not valid. dropping key fob packet")
 
         cur_time = tns()
-        tmp_keyfob_pkt = KeyFobPacket(key_fb_packet[:-1], key_fb_packet[-1], cur_time)
+        tmp_kfb_pkt = KeyFobPacket(key_fb_packet[:-1], key_fb_packet[-1], cur_time)
 
         if len(self.key_fobs_list) == 0:
-            self.key_fobs_list = [[tmp_keyfob_pkt]]
+            self.key_fobs_list = [[tmp_kfb_pkt]]
             print("new key fob packet received")
         else:
-            if self.key_fobs_list[-1][-1].name != tmp_keyfob_pkt.name:
+            if self.key_fobs_list[-1][-1].name != tmp_kfb_pkt.name:
                 print("key fob packet is not the same type as previous. dropping key fob packet")
 
             elif (cur_time - self.key_fobs_list[-1][-1].pk_recv_time) < 1000000000:
-                self.key_fobs_list[-1].append(tmp_keyfob_pkt)
+                self.key_fobs_list[-1].append(tmp_kfb_pkt)
                 print("appending to previous packet")
 
             else:
                 print("new key fob packet received")
-                self.key_fobs_list.append([tmp_keyfob_pkt])
+                self.key_fobs_list.append([tmp_kfb_pkt])

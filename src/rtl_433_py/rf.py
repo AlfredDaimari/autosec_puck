@@ -21,23 +21,26 @@ class YDSendPacketEvent(threading.Event):
     def set_sending(self) -> None:
         """
         starts sending event \n
-        stops sending event in 0.25 seconds \n
         """
         self.set()
-        self.status = True
-        self.__set_not_sending()
 
-    def __stop_sending_in_5(self) -> None:
+    def unset_sending(self) -> None:
         """
-        changes status of event to not sending in 0.25 seconds
+        stops sending event \n
+        stops accepting signals in 1.5 seconds
         """
-        sleep(5)
+        self.__unset_sending()
+
+    def __unset_sending_in_15(self) -> None:
+        """
+        changes status of event to not sending in 0.2 seconds
+        """
+        sleep(1.5)
         self.clear()
-        self.status = False
-        print("can now pushing packets to rolling key fobs")
+        print("now accepting packets to rolling key fobs")
 
-    def __set_not_sending(self):
-        new_thread = threading.Thread(target=self.__stop_sending_in_5, args=())
+    def __unset_sending(self):
+        new_thread = threading.Thread(target=self.__unset_sending_in_15, args=())
         new_thread.start()
         del new_thread
 
