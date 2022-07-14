@@ -27,16 +27,17 @@ class YDSendPacketEvent(threading.Event):
         self.status = True
         self.__set_not_sending()
 
-    def __stop_sending_in_025(self) -> None:
+    def __stop_sending_in_5(self) -> None:
         """
         changes status of event to not sending in 0.25 seconds
         """
-        sleep(0.25)
+        sleep(5)
         self.clear()
         self.status = False
+        print("can now pushing packets to rolling key fobs")
 
     def __set_not_sending(self):
-        new_thread = threading.Thread(target=self.__stop_sending_in_025, args=())
+        new_thread = threading.Thread(target=self.__stop_sending_in_5, args=())
         new_thread.start()
         del new_thread
 
@@ -67,8 +68,7 @@ class RfSender:
         for msg in mod_msg:
             try:
                 print("sending message!")
-                self.yd_stick.RFxmit(msg, repeat=5)
-                sleep(0.01)
+                self.yd_stick.RFxmit(msg)
             except:
                 print("Error in sending message!")
                 return
