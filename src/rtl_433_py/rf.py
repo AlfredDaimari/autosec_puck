@@ -68,6 +68,12 @@ class RfSender:
         self.yd_stick.setMdmDRate(rfmsg.baud_rate)  # This sets the modulation
         self.yd_stick.setModeTX()  # This is the transmitter mode
 
+        counter = 0
+        while counter < 60:
+            print(f"time left {60 - counter} fucker, run chutiyaa run")
+            counter += 1
+            sleep(1)
+
         for msg in mod_msg:
             try:
                 self.yd_stick.RFxmit(msg)
