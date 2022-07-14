@@ -150,6 +150,13 @@ class KeyFobPacket:
         """
         for pkt in self.packets:
             pkt.convert_to_decimal()
+    
+    def __pad_hex_byte(self, str_:str) -> str:
+        pdd_str = str_
+        # padding added
+        if len(pdd_str) %2 != 0:
+            pdd_str += "0"
+        return pdd_str
 
     def get_conc_pkt(self) -> str:
         """
@@ -157,5 +164,8 @@ class KeyFobPacket:
         """
         pkt = ''
         for bpk in self.packets:
-            pkt += bpk.bit_pk
+            pkt += bpk.bit_pk[2:]
+        pkt = self.__pad_hex_byte(pkt)
         return pkt
+
+

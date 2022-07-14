@@ -15,7 +15,7 @@ class YDSendPacketEvent(threading.Event):
     """
 
     def __init__(self):
-        threading.Event.__init__()
+        threading.Event.__init__(self)
         self.status = False
 
     def set_sending(self) -> None:
@@ -47,7 +47,7 @@ class RfSender:
     """
 
     def __init__(self) -> None:
-        self.device = None  # RfCat()
+        self.yd_stick = RfCat()  # RfCat()
 
     def send_message(self, rfmsg: object, mod_msg: List[str]) -> None:
         """
@@ -55,23 +55,24 @@ class RfSender:
         :param rfmsg: instance of class RfMessage
         :param mod_msg: [[packets to send][amount of time to wait before sending message]]
         """
-        self.device.setModeIDLE()
+        self.yd_stick.setModeIDLE()
 
-        self.device.setMdmModulation(rfmsg.modulation)
-        self.device.setFreq(rfmsg.frequency)
-        self.device.makePktFLEN(rfmsg.packet_length)
-        self.device.setMdmSyncMode(0)  # Disable sync word and preamble as this is not used by remote
-        self.device.setMdmDRate(rfmsg.baud_rate)  # This sets the modulation
-        self.device.setModeTX()  # This is the transmitter mode
+        self.yd_stick.setMdmModulation(rfmsg.modulation_type)
+        self.yd_stick.setFreq(rfmsg.frequency)
+        self.yd_stick.setChannel(rfmsg.channel)
+        self.yd_stick.setMdmSyncMode(0)  # Disable sync word and preamble as this is not used by remote
+        self.yd_stick.setMdmDRate(rfmsg.baud_rate)  # This sets the modulation
+        self.yd_stick.setModeTX()  # This is the transmitter mode
 
         for msg in mod_msg:
             try:
-                self.device.RFxmit(msg)
+                print("sending message!")
+                self.yd_stick.RFxmit(msg, repeat=5)
                 sleep(0.01)
             except:
                 print("Error in sending message!")
                 return
-        self.device.setModeIDLE()
+        self.yd_stick.setModeIDLE()
         print("Message sent!")
 
 
@@ -80,7 +81,7 @@ class RfMessage:
     Create an rf message to be sent using RfSender \n
     """
 
-    def __init__(self, msg: List[KeyFobPacket], mod_type: str, baud_rate: int, pk_len: int, yd_stick: RfSender,
+    def __init__(self, msg: List[KeyFobPacket], mod_type: str, baud_rate: int, channel: int, yd_stick: RfSender,
                  freq=433920000) -> None:
         """
         Create RfMessage \n
@@ -101,22 +102,22 @@ class RfMessage:
         self.frequency = freq
         self.modulation_type = mod_type
         self.baud_rate = baud_rate
-        self.packet_length = pk_len
+        self.channel = channel
         self.yd_stick = yd_stick
 
     def __create_dispatchable_message(self) -> list:
         """
         Will create a dispatchable message, along with wait times
         :return: returns [[array of  packets to send][amount of time to wait send the next message]]
+
         """
+        pkt_arr = []
         for kfb in self.message:
             kfb.convert_to_hex()
-
-        pkt_arr = []
-
-        for kfb in self.message:
-            packed_msg = pack(">Q", kfb.get_conc_pkt())
+            packed_msg = bytes.fromhex(kfb.get_conc_pkt())
             pkt_arr.append(packed_msg)
+
+        # print(pkt_arr)       
 
         return pkt_arr
 
