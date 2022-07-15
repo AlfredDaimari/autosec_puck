@@ -12,7 +12,7 @@ int check_for_maruti_nippon(bitbuffer_t *bitbuffer)
                 return 1;
         }
 
-        return -1;
+        return 0;
 }
 // TODO: make a concatenating gap function
 
