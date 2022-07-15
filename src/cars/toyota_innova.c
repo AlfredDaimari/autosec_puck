@@ -9,10 +9,10 @@
 int check_for_toyota(bitbuffer_t *bitbuffer)
 {
         if (bitbuffer->bits_per_row[0] > 231) {
-                return 0;
+                return 1;
         }
 
-        return -1;
+        return 0;
 }
 
 void create_toyota_bit_pk(bitbuffer_t *bitbuffer, char *str)
