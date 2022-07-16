@@ -48,7 +48,7 @@ class RollingKeyFobs:
         :param index: the key fob to print from
         """
         for key_fob in self.key_fobs_list[index]:
-            cprint(key_fob, "green")
+            cprint(key_fob, "yellow", "on_blue")
             cprint(f"-- next key fob in index {index} --", "white", "on_green")
 
     def pp_print_all(self) -> None:
@@ -58,9 +58,10 @@ class RollingKeyFobs:
         """
         print("\n\n")
         for i in range(len(self)):
-            cprint(f"key fobs in index {i}")
+            cprint(f"key fobs in index {i}", "green", "on_yellow")
             self.pp_print(i)
             print("\n")
+            cprint(f"next key fob VVV in index {i + 1}", "green", "on_yellow")
         print("\n\n")
 
     @property
@@ -86,21 +87,19 @@ class RollingKeyFobs:
         """
         send the first message in the queue
         """
+        cprint("key fobs to be sent", "yellow")
+        self.pp_print(0)
         kfbs_to_be_sent = self.__shift()
-
-        print("key fobs to be sent")
-        for kfb in kfbs_to_be_sent:
-            print(kfb, " -- ", end="")
-        print("")  # new line
+        print("\n")  # new line
 
         # TODO: connect with RfMessage
-        rf_message = RfMessage(kfbs_to_be_sent, MOD_ASK_OOK, 4000, 1, self.yd_stick)
+        rf_message = RfMessage(kfbs_to_be_sent, MOD_ASK_OOK, 2500, 1, self.yd_stick)
         # self.jam.stop()
         rf_message.send()
         # self.jam.start()
 
-        print("current rolling key_fobs struct")
-        print(self)
+        cprint("current rolling key_fobs struct", "yellow")
+        self.pp_print_all()
 
         del kfbs_to_be_sent
 
@@ -123,10 +122,6 @@ class RollingKeyFobs:
         :param key_fb_packet: a list in the form ["bits:gap", "bits:gap", "name_of_car"]
         """
 
-        if self.key_fobs_list[-1][-1].name != key_fb_packet[-1]:
-            cprint("key fob packet is not the same type as previous. dropping key fob packet", "white", "on_red")
-            return
-
         if len(key_fb_packet) < 2:
             cprint("key fob packet is not valid. dropping key fob packet", "white", "on_red")
 
@@ -136,12 +131,15 @@ class RollingKeyFobs:
 
         if len(self.key_fobs_list) == 0:
             self.key_fobs_list = [tmp_kfb_list]
-            cprint(f"first key fob packet received of type {key_fb_packet[-1]}", "white", "on_green")
+            cprint(f"first key fob packet received of type {key_fb_packet[-1]}", "white", "on_yellow")
         else:
-            if (cur_time - self.key_fobs_list[-1][-1].pk_recv_time) < 1000000000:
+            if self.key_fobs_list[-1][-1].name != key_fb_packet[-1]:
+                cprint("key fob packet is not the same type as previous. dropping key fob packet", "white", "on_red")
+
+            elif (cur_time - self.key_fobs_list[-1][-1].pk_recv_time) < 1000000000:
                 self.key_fobs_list[-1] += tmp_kfb_list
-                cprint("appending to previous packet", "white", "on_green")
+                cprint("appending to previous packet", "white", "on_yellow")
 
             else:
                 self.key_fobs_list.append(tmp_kfb_list)
-                cprint("new key fob packet received", "white", "on_green")
+                cprint("new key fob packet received", "white", "on_yellow")

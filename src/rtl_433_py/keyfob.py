@@ -69,12 +69,12 @@ class BitPack:
         if self.__num_type == 2:
             int_rep = int(self.bit_pk, 2)
             hex_rep = hex(int_rep)
-            self.bit_pk = hex_rep
+            self.bit_pk = hex_rep[2:]
             self.__num_type = 16
 
         if self.__num_type == 10:
             hex_rep = hex(self.bit_pk)
-            self.bit_pk = hex_rep
+            self.bit_pk = hex_rep[2:]
             self.__num_type = 16
 
     def convert_to_binary(self) -> None:
@@ -169,14 +169,8 @@ class KeyFobPacket:
         for pkt in self.packets:
             pkt.convert_to_decimal()
 
-    def get_conc_pkt(self) -> str:
-        """
-        :return: string of concatenated bits
-        """
-        pkt = ''
-        for bpk in self.packets:
-            pkt += bpk.bit_pk[2:]
-        return pkt
+    def conc_pkts(self) -> str:
+        pass
 
     def __clean(self):
         pass
@@ -216,6 +210,13 @@ class InnovaKeyFobPacket(KeyFobPacket):
                 key_fbs.append([kfb])
         return key_fbs
 
+    def conc_pkts(self) -> str:
+        """
+        :return: string of concatenated packets
+        """
+        return self.packets[0].bit_pk + (
+                    "0" * 4)  # rewrite -> try calling this function before convert to hex (4 * 4 = 16)
+
 
 class MarutiNipponKeyFobPacket(KeyFobPacket):
     """
@@ -232,8 +233,21 @@ class MarutiNipponKeyFobPacket(KeyFobPacket):
         cleans up the bit_pk for toyota
         :return: None
         """
-        pass
+        self.packets[0].bitpk_drop(23)
+        self.packets[0].bitpk_pad(1)
+
+        self.packets[1].bitpk_drop(197)
+        self.packets[1].bitpk_pad(3)
 
     @classmethod
     def filter(cls, key_fb_packet: List[str]) -> List[List[str]]:
         return [key_fb_packet]
+
+    def conc_pkts(self) -> str:
+        """
+        :return: a string of concatenated bits
+        """
+        str_ = self.packets[0].bit_pk
+        str_ += "0" * 4
+        str_ += self.packets[1].bit_pk
+        return str_

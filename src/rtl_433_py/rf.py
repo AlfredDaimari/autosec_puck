@@ -78,8 +78,7 @@ class RfSender:
         for msg in mod_msg:
             try:
                 self.yd_stick.setModeTX()
-                self.yd_stick.RFxmit(msg)
-                sleep(0.1)
+                self.yd_stick.RFxmit(msg, repeat=5)
                 self.yd_stick.setModeIDLE()
             except:
                 print("Error in sending message!")
@@ -126,7 +125,7 @@ class RfMessage:
         pkt_arr = []
         for kfb in self.message:
             kfb.convert_to_hex()
-            packed_msg = bytes.fromhex(kfb.get_conc_pkt())
+            packed_msg = bytes.fromhex(kfb.conc_pkts())
             pkt_arr.append(packed_msg)
 
         # print(pkt_arr)       

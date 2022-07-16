@@ -8,7 +8,7 @@
 
 int check_for_toyota(bitbuffer_t *bitbuffer)
 {
-        if (bitbuffer->bits_per_row[0] > 236) {
+        if (bitbuffer->bits_per_row[0] > 236 && bitbuffer->bits_per_row[0] < 242) {
                 return 1;
         }
 
