@@ -1,8 +1,8 @@
 from time import time_ns as tns
 from typing import List
 from termcolor import cprint
-from rf import *
-from keyfob import *
+from rf import RfSender, RfMessage, MOD_ASK_OOK
+from keyfob import InnovaKeyFobPacket, MarutiNipponKeyFobPacket, KeyFobPacket
 from jammer import *
 
 # TODO: improve readability
