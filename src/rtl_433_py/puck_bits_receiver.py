@@ -14,6 +14,7 @@ import dbus.service
 from dbus.mainloop.glib import DBusGMainLoop
 from gi.repository import GLib
 from datetime import datetime
+from termcolor import cprint
 from rolling_keyfobs import RollingKeyFobs
 from rf import YDSendPacketEvent
 
@@ -47,7 +48,7 @@ class PuckBitsReceiver(dbus.service.Object):
         """
         now = datetime.now()
         dt_string = now.strftime("%H:%M:%S %d/%m/%Y")
-        print(f"received: {bits} at {dt_string}")
+        cprint(f"received: {bits} at {dt_string}", "white", "on_yellow")
 
         # only push bits when yard stick is not sending, else we may capture the sent-out bits
         if not self.yd_sending.is_set():
@@ -55,7 +56,7 @@ class PuckBitsReceiver(dbus.service.Object):
             self.rolling_key_fobs.push(bits.split('-'))
             self.lock.release()
         else:
-            print("received packets while yd_stick was sending, dropping erroneous packets")
+            cprint("received packets while yd_stick was sending, dropping erroneous packets", "white", "on_red")
 
         return "saibo"
 

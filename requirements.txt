@@ -13,3 +13,5 @@ PyGObject==3.36.0
 PyOpenGL==3.1.0
 pyusb==1.2.1
 rfcat==1.9.5
+termcolor~=1.1.0
+python-dateutil~=2.7.3

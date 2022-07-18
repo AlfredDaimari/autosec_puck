@@ -8,7 +8,9 @@
 
 int check_for_maruti_nippon(bitbuffer_t *bitbuffer)
 {
-        if (bitbuffer->bits_per_row[0] > 20 && bitbuffer->bits_per_row[1] > 196) {
+        //(void) fprintf(stderr, "%d - %d", bitbuffer->bits_per_row[0], bitbuffer->bits_per_row[1]);
+        if (bitbuffer->bits_per_row[0] < 27 && bitbuffer->bits_per_row[0] > 18 && bitbuffer->bits_per_row[1] < 208 &&
+            bitbuffer->bits_per_row[1] > 196) {
                 return 1;
         }
 

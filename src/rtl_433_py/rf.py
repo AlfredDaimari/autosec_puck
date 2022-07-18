@@ -66,12 +66,20 @@ class RfSender:
         self.yd_stick.setChannel(rfmsg.channel)
         self.yd_stick.setMdmSyncMode(0)  # Disable sync word and preamble as this is not used by remote
         self.yd_stick.setMdmDRate(rfmsg.baud_rate)  # This sets the modulation
-        self.yd_stick.setModeTX()  # This is the transmitter mode
+
+        self.yd_stick.setModeIDLE()
+
+        counter = 0
+        while counter < 30:
+            print(f"time left {30 - counter} fucker, run chutiyaa run")
+            counter += 1
+            sleep(1)
 
         for msg in mod_msg:
             try:
-                self.yd_stick.RFxmit(msg)
-                sleep(0.1)
+                self.yd_stick.setModeTX()
+                self.yd_stick.RFxmit(msg, repeat=5)
+                self.yd_stick.setModeIDLE()
             except:
                 print("Error in sending message!")
                 return
@@ -117,7 +125,7 @@ class RfMessage:
         pkt_arr = []
         for kfb in self.message:
             kfb.convert_to_hex()
-            packed_msg = bytes.fromhex(kfb.get_conc_pkt())
+            packed_msg = bytes.fromhex(kfb.conc_pkts())
             pkt_arr.append(packed_msg)
 
         # print(pkt_arr)       
