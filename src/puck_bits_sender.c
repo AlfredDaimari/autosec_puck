@@ -11,9 +11,9 @@
 #include <dbus/dbus.h>
 #include <find_car.h>
 
-const char INTERFACE_NAME[] = "org.autosec.PuckBitsReceiverInterface";
-const char BUS_NAME[] = "org.autosec.PuckBitsReceiver";
-const char OBJECT_PATH_NAME[] = "/org/autosec/PuckBitsReceiver";
+const char INTERFACE_NAME[] = "org.autosec.PuckReceiverInterface";
+const char BUS_NAME[] = "org.autosec.PuckReceiver";
+const char OBJECT_PATH_NAME[] = "/org/autosec/PuckReceiver";
 const char METHOD_NAME[] = "ReceiveBits";
 const char BITS_SENDER_BUS_NAME[] = "org.autosec.PuckBitsSender";
 int DBUS_RET;
