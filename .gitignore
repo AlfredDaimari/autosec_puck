@@ -53,7 +53,7 @@ build*/
 *.lastbuildstate
 *.db
 *.opendb
-
+.cache
 _*/
 
 rtl_433_tests
